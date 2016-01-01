@@ -1,5 +1,3 @@
-# events-fetcher
-
 ### Run task on Spark Yarn cluster
 
 Create tasks directory at Yarn master node
