@@ -9,7 +9,7 @@ object Client {
 
     def main(args: Array[String]) {
         val sparkConf: SparkConf = new SparkConf().setAppName("events-fetcher")
-            .setMaster("local[1]")
+            .setMaster("yarn-client")
 
         val sc = new SparkContext(sparkConf)
 
