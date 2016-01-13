@@ -2,15 +2,17 @@ package uk.vitalcode.events.fetcher.test
 
 import java.io.InputStream
 
+import jodd.jerry.{JerryNodeFunction, Jerry}
+import jodd.jerry.Jerry._
+import jodd.lagarto.dom.Node
 import org.apache.commons.codec.digest.DigestUtils
 import org.apache.hadoop.conf.Configuration
+import org.apache.hadoop.hbase._
 import org.apache.hadoop.hbase.client._
 import org.apache.hadoop.hbase.mapreduce.TableInputFormat
-import org.apache.hadoop.hbase._
 import org.apache.hadoop.hbase.util.Bytes
 import org.apache.spark.{SparkConf, SparkContext}
 import org.scalatest.{BeforeAndAfterAll, FunSuite, ShouldMatchers}
-import uk.vitalcode.events.fetcher.model.MineType
 import uk.vitalcode.events.fetcher.model.MineType
 import uk.vitalcode.events.fetcher.model.MineType._
 
@@ -24,11 +26,9 @@ class MockDataTest extends FunSuite with ShouldMatchers with BeforeAndAfterAll {
 
     test("HBase test rows count") {
         prepareTestData()
-        val result = 2
-
-        // val result = rowsCount(sc)
-        // println(result)
-        result should equal(2)
+        val result = rowsCount(sc)
+        println(result)
+        result should equal(15)
     }
 
     private def rowsCount(sc: SparkContext): Long = {
@@ -36,6 +36,39 @@ class MockDataTest extends FunSuite with ShouldMatchers with BeforeAndAfterAll {
         val rdd = sc.newAPIHadoopRDD(hBaseConf, classOf[TableInputFormat],
             classOf[org.apache.hadoop.hbase.io.ImmutableBytesWritable],
             classOf[org.apache.hadoop.hbase.client.Result])
+
+        //rdd.foreach(e => println("%s | %s |".format(Bytes.toString(e._1.get()), e._2)))
+
+        // Return column value
+        rdd.foreach(e => println("%s | %s".format(
+            Bytes.toString(e._1.get()),
+            Bytes.toString(e._2.getValue(Bytes.toBytes("content"), Bytes.toBytes("hash"))))))
+
+        rdd.foreach(e => {
+            println("%s | %s".format(
+                Bytes.toString(e._1.get()), "data"))
+
+            val dom: Jerry = jerry(Bytes.toString(e._2.getValue(Bytes.toBytes("content"), Bytes.toBytes("data"))))
+
+            val eventLinkSelection = dom.$("div.main_wrapper > section > article > ul > li > h2 > a")
+            eventLinkSelection.each(new JerryNodeFunction {
+                override def onNode(node: Node, index: Int): Boolean = {
+                    val eventLink = node.getAttribute("href").replaceAll("""\s{2,}""", " ").replaceAll("""^\s|\s$""", "")
+                    println("L -- %s".format(eventLink))
+                    true
+                }
+            })
+
+            val eventTitleSelection = dom.$("div.whats-on ul.omega > li > h2")
+            eventTitleSelection.each(new JerryNodeFunction {
+                override def onNode(node: Node, index: Int): Boolean = {
+                    val eventTitle = node.getTextContent.replaceAll("""\s{2,}""", " ").replaceAll("""^\s|\s$""", "")
+                    println("T -- %s".format(eventTitle))
+                    true
+                }
+            })
+
+        })
 
         rdd.count()
     }
@@ -53,7 +86,7 @@ class MockDataTest extends FunSuite with ShouldMatchers with BeforeAndAfterAll {
             println(s"Test table [$testTable] deleted")
         }
 
-        val tableDescriptor : HTableDescriptor = new HTableDescriptor(testTable)
+        val tableDescriptor: HTableDescriptor = new HTableDescriptor(testTable)
         tableDescriptor.addFamily(new HColumnDescriptor("content"))
         tableDescriptor.addFamily(new HColumnDescriptor("metadata"))
         admin.createTable(tableDescriptor)
@@ -132,14 +165,14 @@ class MockDataTest extends FunSuite with ShouldMatchers with BeforeAndAfterAll {
     }
 
     override protected def beforeAll(): Unit = {
-        val sparkConf: SparkConf = new SparkConf().setAppName("events-fetcher")
+        val sparkConf: SparkConf = new SparkConf().setAppName("events-fetcher-test")
             .setMaster("local[1]")
         sc = new SparkContext(sparkConf)
 
         hBaseConf = HBaseConfiguration.create()
         hBaseConf.set(HConstants.ZOOKEEPER_QUORUM, "localhost")
-        hBaseConf.set(TableInputFormat.INPUT_TABLE, "page")
-        hBaseConn = ConnectionFactory.createConnection(hBaseConf);
+        hBaseConf.set(TableInputFormat.INPUT_TABLE, Bytes.toString(testTable.getName))
+        hBaseConn = ConnectionFactory.createConnection(hBaseConf)
 
     }
 
@@ -147,5 +180,10 @@ class MockDataTest extends FunSuite with ShouldMatchers with BeforeAndAfterAll {
         sc.stop()
         hBaseConn.close()
     }
+
+    // TODO get understanding of rdd in context of hbase data
+    // TODO try to use Jerry to fetch pages props
+    // TODO use page definition model to fetch requested props
+    // TODO use isRow page model property
 }
 
