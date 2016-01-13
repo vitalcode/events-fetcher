@@ -44,11 +44,11 @@ libraryDependencies ++= {
         "org.jodd" % "jodd-core" % joddV,
         "org.jodd" % "jodd-log" % joddV,
 
-        "com.typesafe.scala-logging" %% "scala-logging" % scalaLoggingV,
-
-        "com.softwaremill.macwire" %% "macros" % macwireV % "provided",
-        "com.softwaremill.macwire" %% "util" % macwireV,
-        "com.softwaremill.macwire" %% "proxy" % macwireV,
+//        "com.typesafe.scala-logging" %% "scala-logging" % scalaLoggingV,
+//
+//        "com.softwaremill.macwire" %% "macros" % macwireV % "provided",
+//        "com.softwaremill.macwire" %% "util" % macwireV,
+//        "com.softwaremill.macwire" %% "proxy" % macwireV,
 
         "org.scalatest" %% "scalatest" % scalaTestV % "test",
         "org.scalamock" %% "scalamock-scalatest-support" % scalamockV % "test"
