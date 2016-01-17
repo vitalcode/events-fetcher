@@ -2,8 +2,8 @@ package uk.vitalcode.events.fetcher.test
 
 import java.io.InputStream
 
-import jodd.jerry.{JerryNodeFunction, Jerry}
 import jodd.jerry.Jerry._
+import jodd.jerry.{Jerry, JerryNodeFunction}
 import jodd.lagarto.dom.Node
 import org.apache.commons.codec.digest.DigestUtils
 import org.apache.hadoop.conf.Configuration
@@ -11,12 +11,21 @@ import org.apache.hadoop.hbase._
 import org.apache.hadoop.hbase.client._
 import org.apache.hadoop.hbase.mapreduce.TableInputFormat
 import org.apache.hadoop.hbase.util.Bytes
+import org.apache.spark.rdd.RDD
 import org.apache.spark.{SparkConf, SparkContext}
 import org.scalatest.{BeforeAndAfterAll, FunSuite, ShouldMatchers}
-import uk.vitalcode.events.fetcher.model.MineType
 import uk.vitalcode.events.fetcher.model.MineType._
+import uk.vitalcode.events.fetcher.model.{MineType, _}
 
-class MockDataTest extends FunSuite with ShouldMatchers with BeforeAndAfterAll {
+object Util extends Serializable {
+    def getParent(page: Page, ref: String): Page = {
+        if (page.id.equals(ref)) page else getParent(page.parent, ref)
+    }
+}
+
+case class Result(props: Set[Prop], pages: Seq[Page]) extends Serializable
+
+class MockDataTest extends FunSuite with ShouldMatchers with BeforeAndAfterAll with Serializable {
     //with LazyLogging
 
     var sc: SparkContext = _
@@ -26,51 +35,190 @@ class MockDataTest extends FunSuite with ShouldMatchers with BeforeAndAfterAll {
 
     test("HBase test rows count") {
         prepareTestData()
-        val result = rowsCount(sc)
+
+        val page: Page = PageBuilder()
+            .setId("list")
+            .setUrl("http://www.cambridgesciencecentre.org/whats-on/list")
+            .addProp(PropBuilder()
+                .setName("title")
+                .setCss("div.whats-on ul.omega > li > h2")
+                .setKind(PropType.Text)
+            )
+            .addPage(PageBuilder()
+                .setId("description")
+                .setLink("div.main_wrapper > section > article > ul > li > h2 > a")
+                .addPage(PageBuilder()
+                    .setId("image")
+                    .setLink("section.event_detail > div.page_content > article > img")
+                )
+                .addProp(PropBuilder()
+                    .setName("description")
+                    .setCss("div.main_wrapper > section.event_detail > div.page_content p:nth-child(4)")
+                    .setKind(PropType.Text)
+                )
+                .addProp(PropBuilder()
+                    .setName("cost")
+                    .setCss("div.main_wrapper > section.event_detail > div.page_content p:nth-child(5)")
+                    .setKind(PropType.Text)
+                )
+            )
+            .addPage(PageBuilder()
+                .setRef("list")
+                .setId("pagination")
+                .setLink("div.pagination > div.omega > a")
+            )
+            .build()
+
+        val result = rowsCount(page, sc)
         println(result)
         result should equal(15)
     }
 
-    private def rowsCount(sc: SparkContext): Long = {
+    private def rowsCount(page: Page, sc: SparkContext): Long = {
 
         val rdd = sc.newAPIHadoopRDD(hBaseConf, classOf[TableInputFormat],
             classOf[org.apache.hadoop.hbase.io.ImmutableBytesWritable],
             classOf[org.apache.hadoop.hbase.client.Result])
 
-        //rdd.foreach(e => println("%s | %s |".format(Bytes.toString(e._1.get()), e._2)))
+        val linksProp: Prop = PropBuilder()
+            .setName("link")
+            .setCss("div.main_wrapper > section > article > ul > li > h2 > a")
+            .setKind(PropType.Link)
+            .build()
 
-        // Return column value
+        val titleProp: Prop = PropBuilder()
+            .setName("title")
+            .setCss("div.whats-on ul.omega > li > h2")
+            .setKind(PropType.Text)
+            .build()
+
+        val getProperty: (Prop, Jerry) => String = (prop: Prop, dom: Jerry) => {
+            var propValue: String = null
+            dom.$(prop.css).each(new JerryNodeFunction {
+                override def onNode(node: Node, index: Int): Boolean = {
+                    val value = prop.kind match {
+                        case PropType.Link => node.getAttribute("href")
+                        case _ => node.getTextContent
+                    }
+                    propValue = value.replaceAll( """\s{2,}""", " ").replaceAll( """^\s|\s$""", "")
+                    println(s"${prop.name} -- $propValue")
+                    true
+                }
+            })
+            propValue
+        }
+
+        val getPageProperties: (Page, Jerry) => Set[Prop] = (currentPage: Page, dom: Jerry) => {
+            currentPage.props.values.foreach(p => p.value = getProperty(p, dom))
+            currentPage.props.values.toSet[Prop]
+        }
+
+//        val getParent: (Page, String) => Page = (page: Page, ref: String) => {
+//            if (page.id.equals(ref)) page else getParent(page.parent, ref)
+//        }
+
+
+        val getPageDom: (Page) => RDD[Result] = (currentPage: Page) => {
+            rdd.filter(f => Bytes.toString(f._1.get()) == currentPage.url)
+                .map(m => jerry(Bytes.toString(m._2.getValue(Bytes.toBytes("content"), Bytes.toBytes("data")))))
+                .map(dom => {
+                    //var childPages = Seq Seq[Page] //Set.empty[Page]
+                    val currentPageProp: Set[Prop] = getPageProperties(currentPage, dom)
+                    val childPages = collection.mutable.ArrayBuffer[Page]()
+
+                    val pages = if (currentPage.ref == null) {
+                        println(s"Got [${currentPage.pages.size}] child pages of the current page")
+                        currentPage.pages
+                    } else {
+                        val parentPage = Util.getParent(currentPage, currentPage.ref)
+                        println((s"Got[${parentPage.pages.size}] child pages of the parent ${parentPage}"))
+                        parentPage.pages
+                    }
+                    println(s"Got child pages $pages")
+
+                    pages.foreach(p => {
+                        dom.$(p.link).each(new JerryNodeFunction {
+                            override def onNode(node: Node, index: Int): Boolean = {
+                                val childPageUrl = node.getAttribute("href")
+                                //println(s"childPageUrl [$childPageUrl]")
+                                val childPage: Page = Page(p.id, p.ref, childPageUrl, p.link, p.props, p.pages, p.parent, p.isRow)
+                                //println(s"childPageUrl [$childPageUrl]")
+                                //getPageDom(childPage)
+                                childPages += childPage
+                                true
+                            }
+                        })
+                    })
+                    //val array  = childPages.toArray[Page]
+                    Result(currentPageProp, childPages.seq)
+                })
+            //.map(p => p)
+            //            .foreach(p => {
+            //                println(s"child page :-- [$p]")
+            //})
+        }
+
+        //        def getPageDom(currentPage: Page): Unit = {
+        //            rdd.filter(f => Bytes.toString(f._1.get()) == currentPage.url)
+        //                .foreach(f => {
+        //                    val pageData: String = Bytes.toString(f._2.getValue(Bytes.toBytes("content"), Bytes.toBytes("data")))
+        //                    val pageDom: Jerry = jerry(pageData)
+        //                    currentPage.pages.foreach(p => {
+        //                        pageDom.$(p.link).each(new JerryNodeFunction {
+        //                            override def onNode(node: Node, index: Int): Boolean = {
+        //                                val childPageUrl = node.getAttribute("href")
+        //                                println(s"childPageUrl [$childPageUrl]")
+        //                                val childPage: Page = Page(currentPage.id, currentPage.ref, childPageUrl, currentPage.link, currentPage.props, currentPage.pages, currentPage.parent, currentPage.isRow)
+        //                                println(s"childPage [$childPage]")
+        //                                //getPageDom(childPage)
+        //                                true
+        //                            }
+        //                        })
+        //                    })
+        //                    //println(pageData)
+        //                })
+        //        }
+
         rdd.foreach(e => println("%s | %s".format(
             Bytes.toString(e._1.get()),
             Bytes.toString(e._2.getValue(Bytes.toBytes("content"), Bytes.toBytes("hash"))))))
 
         rdd.foreach(e => {
-            println("%s | %s".format(
-                Bytes.toString(e._1.get()), "data"))
 
-            val dom: Jerry = jerry(Bytes.toString(e._2.getValue(Bytes.toBytes("content"), Bytes.toBytes("data"))))
+            val mineType = MineType.withName(Bytes.toString(e._2.getValue(Bytes.toBytes("metadata"), Bytes.toBytes("mine-type"))))
+            println("%s | %s".format(Bytes.toString(e._1.get()), mineType))
 
-            val eventLinkSelection = dom.$("div.main_wrapper > section > article > ul > li > h2 > a")
-            eventLinkSelection.each(new JerryNodeFunction {
-                override def onNode(node: Node, index: Int): Boolean = {
-                    val eventLink = node.getAttribute("href").replaceAll("""\s{2,}""", " ").replaceAll("""^\s|\s$""", "")
-                    println("L -- %s".format(eventLink))
-                    true
-                }
-            })
-
-            val eventTitleSelection = dom.$("div.whats-on ul.omega > li > h2")
-            eventTitleSelection.each(new JerryNodeFunction {
-                override def onNode(node: Node, index: Int): Boolean = {
-                    val eventTitle = node.getTextContent.replaceAll("""\s{2,}""", " ").replaceAll("""^\s|\s$""", "")
-                    println("T -- %s".format(eventTitle))
-                    true
-                }
-            })
+            if (mineType == MineType.TEXT_HTML) {
+                val dom: Jerry = jerry(Bytes.toString(e._2.getValue(Bytes.toBytes("content"), Bytes.toBytes("data"))))
+                getProperty(linksProp, dom)
+                getProperty(titleProp, dom)
+            }
 
         })
 
+
+        def doJob(page: Page): Unit = {
+            val result: Array[Result] = getPageDom(page).collect()
+
+            if (!result.isEmpty) {
+
+                result.head.props.foreach(p => {
+                    println(s"found prop: ${p.name} -- ${p.value}")
+                })
+
+                result.head.pages.foreach(p => {
+                    println(s"child page: -- ${p}")
+                    doJob(p)
+                })
+            }
+        }
+
+        //val newRDD = getPageDom(page)
+        println(s"child page: -- $page")
+        doJob(page)
+
         rdd.count()
+
     }
 
     private def prepareTestData(): Unit = {
@@ -181,9 +329,10 @@ class MockDataTest extends FunSuite with ShouldMatchers with BeforeAndAfterAll {
         hBaseConn.close()
     }
 
-    // TODO get understanding of rdd in context of hbase data
-    // TODO try to use Jerry to fetch pages props
-    // TODO use page definition model to fetch requested props
+    // TODO refactor
+    // TODO collect all properties in separate collection ??? => Map[row(event item), Map[column(prop), value]]
+    // TODO use isRow Page property
+    // TODO Logging in scala 2.10
     // TODO use isRow page model property
 }
 
