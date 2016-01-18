@@ -8,7 +8,7 @@ object PropType extends Enumeration with Serializable {
 }
 
 case class Prop(name: String, css: String, kind: PropType) extends Serializable{
-    var value: String = _
+    var value: Set[String] = Set.empty[String]
 }
 
 case class PropBuilder() extends Builder {

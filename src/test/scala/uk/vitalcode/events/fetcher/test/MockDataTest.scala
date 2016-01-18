@@ -12,122 +12,131 @@ import org.apache.hadoop.hbase.client._
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable
 import org.apache.hadoop.hbase.mapreduce.TableInputFormat
 import org.apache.hadoop.hbase.util.Bytes
+import org.apache.log4j.{Level, Logger}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.{SparkConf, SparkContext}
 import org.scalatest.{BeforeAndAfterAll, FunSuite, ShouldMatchers}
 import uk.vitalcode.events.fetcher.model.MineType._
 import uk.vitalcode.events.fetcher.model.{MineType, _}
 
+case class FetchResult(page: Page, childPages: Seq[Page]) extends Serializable
+
 object FetcherService extends Serializable {
 
-    def doJob(page: Page, rdd: RDD[(ImmutableBytesWritable, client.Result)]): Unit = {
-        val result: Array[Result] = getPageDom(page, rdd).collect()
-
-        if (!result.isEmpty) {
-
-            result.head.props.foreach(p => {
-                println(s"found prop: ${p.name} -- ${p.value}")
-            })
-
-            result.head.pages.foreach(p => {
-                println(s"child page: -- ${p}")
-                doJob(p, rdd)
-            })
+    // TODO should return rows of fetched data
+    def fetchPage(page: Page, rdd: RDD[(ImmutableBytesWritable, client.Result)]): Unit = {
+        fetchPageData(page, rdd) match {
+            case Some(result) =>
+                result.page.props.values.foreach(p => {
+                    println(s"found page prop: ${p.name} -- ${p.value}")
+                })
+                result.childPages.foreach(p => {
+                    println(s"fetching child page: -- $p")
+                    fetchPage(p, rdd)
+                })
+            case None =>
         }
     }
 
-    def getPageDom (currentPage: Page, rdd: RDD[(ImmutableBytesWritable, client.Result)]): RDD[Result] = {
-        rdd.filter(f => Bytes.toString(f._1.get()) == currentPage.url)
-            .map(m => jerry(Bytes.toString(m._2.getValue(Bytes.toBytes("content"), Bytes.toBytes("data")))))
+    private def fetchPageData(page: Page, rdd: RDD[(ImmutableBytesWritable, client.Result)]): Option[FetchResult] = {
+        rdd.filter(row => Bytes.toString(row._1.get()) == page.url)
+            .map(row => jerry(Bytes.toString(row._2.getValue(Bytes.toBytes("content"), Bytes.toBytes("data")))))
             .map(dom => {
-                //var childPages = Seq Seq[Page] //Set.empty[Page]
-                val currentPageProp: Set[Prop] = getPageProperties(currentPage, dom)
                 val childPages = collection.mutable.ArrayBuffer[Page]()
-
-                val pages = if (currentPage.ref == null) {
-                    println(s"Got [${currentPage.pages.size}] child pages of the current page")
-                    currentPage.pages
-                } else {
-                    val parentPage = FetcherService.getParent(currentPage, currentPage.ref)
-                    println((s"Got[${parentPage.pages.size}] child pages of the parent ${parentPage}"))
-                    parentPage.pages
-                }
-                println(s"Got child pages $pages")
-
-                pages.foreach(p => {
-                    dom.$(p.link).each(new JerryNodeFunction {
-                        override def onNode(node: Node, index: Int): Boolean = {
-                            val childPageUrl = node.getAttribute("href")
-                            //println(s"childPageUrl [$childPageUrl]")
-                            val childPage: Page = Page(p.id, p.ref, childPageUrl, p.link, p.props, p.pages, p.parent, p.isRow)
-                            //println(s"childPageUrl [$childPageUrl]")
-                            //getPageDom(childPage)
-                            childPages += childPage
-                            true
-                        }
-                    })
+                getChildPages(page).foreach(p => {
+                    if (p.link != null) {
+                        dom.$(p.link).each(new JerryNodeFunction {
+                            override def onNode(node: Node, index: Int): Boolean = {
+                                val childPageUrl = node.getAttribute("href")
+                                val childPage: Page = Page(p.id, p.ref, childPageUrl, p.link, p.props, p.pages, p.parent, p.isRow)
+                                childPages += childPage
+                                true
+                            }
+                        })
+                    } else {
+                        childPages += p
+                    }
                 })
-                //val array  = childPages.toArray[Page]
-                Result(currentPageProp, childPages.seq)
+                fetchPageProperties(page, dom)
+                FetchResult(page, childPages)
             })
-        //.map(p => p)
-        //            .foreach(p => {
-        //                println(s"child page :-- [$p]")
-        //})
+            .collect()
+            .headOption
     }
 
-    val getPageProperties: (Page, Jerry) => Set[Prop] = (currentPage: Page, dom: Jerry) => {
-        currentPage.props.values.foreach(p => p.value = getProperty(p, dom))
-        currentPage.props.values.toSet[Prop]
+    // Self child or parent child
+    private def getChildPages(page: Page): Set[Page] = {
+        if (page.ref == null) {
+            println(s"Got [${page.pages.size}] child pages of the current page")
+            page.pages
+        } else {
+            val parentPage = FetcherService.getParentPageByRef(page, page.ref)
+            parentPage.url = page.url
+            println(s"Got reference to the parent page [$parentPage]")
+            Set(parentPage)
+        }
     }
 
-    def getProperty(prop: Prop, dom: Jerry): String = {
-        var propValue: String = null
+    private def getParentPageByRef(page: Page, ref: String): Page = {
+        if (page.id.equals(ref)) page else getParentPageByRef(page.parent, ref)
+    }
+
+    private def fetchPageProperties(currentPage: Page, dom: Jerry): Unit = {
+        currentPage.props.values.foreach(p => fetchProperty(p, dom))
+    }
+
+    private def fetchProperty(prop: Prop, dom: Jerry): Unit = {
         dom.$(prop.css).each(new JerryNodeFunction {
             override def onNode(node: Node, index: Int): Boolean = {
                 val value = prop.kind match {
                     case PropType.Link => node.getAttribute("href")
                     case _ => node.getTextContent
                 }
-                propValue = value.replaceAll( """\s{2,}""", " ").replaceAll( """^\s|\s$""", "")
+                val propValue: String = value.replaceAll( """\s{2,}""", " ").replaceAll( """^\s|\s$""", "")
                 println(s"${prop.name} -- $propValue")
+                prop.value += propValue
                 true
             }
         })
-        propValue
-    }
-
-    def getParent(page: Page, ref: String): Page = {
-        if (page.id.equals(ref)) page else getParent(page.parent, ref)
     }
 
 
-//    def getPageDom(currentPage: Page): Unit = {
-//        rdd.filter(f => Bytes.toString(f._1.get()) == currentPage.url)
-//            .foreach(f => {
-//                val pageData: String = Bytes.toString(f._2.getValue(Bytes.toBytes("content"), Bytes.toBytes("data")))
-//                val pageDom: Jerry = jerry(pageData)
-//                currentPage.pages.foreach(p => {
-//                    pageDom.$(p.link).each(new JerryNodeFunction {
-//                        override def onNode(node: Node, index: Int): Boolean = {
-//                            val childPageUrl = node.getAttribute("href")
-//                            println(s"childPageUrl [$childPageUrl]")
-//                            val childPage: Page = Page(currentPage.id, currentPage.ref, childPageUrl, currentPage.link, currentPage.props, currentPage.pages, currentPage.parent, currentPage.isRow)
-//                            println(s"childPage [$childPage]")
-//                            //getPageDom(childPage)
-//                            true
-//                        }
-//                    })
-//                })
-//                //println(pageData)
-//            })
-//    }
+    //    def getPageDom(currentPage: Page): Unit = {
+    //        rdd.filter(f => Bytes.toString(f._1.get()) == currentPage.url)
+    //            .foreach(f => {
+    //                val pageData: String = Bytes.toString(f._2.getValue(Bytes.toBytes("content"), Bytes.toBytes("data")))
+    //                val pageDom: Jerry = jerry(pageData)
+    //                currentPage.pages.foreach(p => {
+    //                    pageDom.$(p.link).each(new JerryNodeFunction {
+    //                        override def onNode(node: Node, index: Int): Boolean = {
+    //                            val childPageUrl = node.getAttribute("href")
+    //                            println(s"childPageUrl [$childPageUrl]")
+    //                            val childPage: Page = Page(currentPage.id, currentPage.ref, childPageUrl, currentPage.link, currentPage.props, currentPage.pages, currentPage.parent, currentPage.isRow)
+    //                            println(s"childPage [$childPage]")
+    //                            //getPageDom(childPage)
+    //                            true
+    //                        }
+    //                    })
+    //                })
+    //                //println(pageData)
+    //            })
+    //    }
 }
 
-case class Result(props: Set[Prop], pages: Seq[Page]) extends Serializable
+trait log {
+    val LOG = Logger.getLogger(this.getClass)// classOf[MockDataTest])
+}
 
-class MockDataTest extends FunSuite with ShouldMatchers with BeforeAndAfterAll with Serializable {
+class MockDataTest extends FunSuite with ShouldMatchers with BeforeAndAfterAll with Serializable with log{
     //with LazyLogging
+
+//    Logger.getLogger("org").setLevel(Level.ERROR)
+//    Logger.getLogger("akka").setLevel(Level.ERROR)
+
+//    private val LOG = Logger.getLogger(this.getClass)// classOf[MockDataTest])
+    LOG.error("Error")
+    LOG.info("INFO")
+
 
     var sc: SparkContext = _
     var hBaseConn: Connection = _
@@ -174,37 +183,37 @@ class MockDataTest extends FunSuite with ShouldMatchers with BeforeAndAfterAll w
             classOf[org.apache.hadoop.hbase.io.ImmutableBytesWritable],
             classOf[org.apache.hadoop.hbase.client.Result])
 
-        val linksProp: Prop = PropBuilder()
-            .setName("link")
-            .setCss("div.main_wrapper > section > article > ul > li > h2 > a")
-            .setKind(PropType.Link)
-            .build()
+//        val linksProp: Prop = PropBuilder()
+//            .setName("link")
+//            .setCss("div.main_wrapper > section > article > ul > li > h2 > a")
+//            .setKind(PropType.Link)
+//            .build()
+//
+//        val titleProp: Prop = PropBuilder()
+//            .setName("title")
+//            .setCss("div.whats-on ul.omega > li > h2")
+//            .setKind(PropType.Text)
+//            .build()
 
-        val titleProp: Prop = PropBuilder()
-            .setName("title")
-            .setCss("div.whats-on ul.omega > li > h2")
-            .setKind(PropType.Text)
-            .build()
-
-        rdd.foreach(e => println("%s | %s".format(
-            Bytes.toString(e._1.get()),
-            Bytes.toString(e._2.getValue(Bytes.toBytes("content"), Bytes.toBytes("hash"))))))
-
-        rdd.foreach(e => {
-
-            val mineType = MineType.withName(Bytes.toString(e._2.getValue(Bytes.toBytes("metadata"), Bytes.toBytes("mine-type"))))
-            println("%s | %s".format(Bytes.toString(e._1.get()), mineType))
-
-            if (mineType == MineType.TEXT_HTML) {
-                val dom: Jerry = jerry(Bytes.toString(e._2.getValue(Bytes.toBytes("content"), Bytes.toBytes("data"))))
-                FetcherService.getProperty(linksProp, dom)
-                FetcherService.getProperty(titleProp, dom)
-            }
-
-        })
+//        rdd.foreach(e => println("%s | %s".format(
+//            Bytes.toString(e._1.get()),
+//            Bytes.toString(e._2.getValue(Bytes.toBytes("content"), Bytes.toBytes("hash"))))))
+//
+//        rdd.foreach(e => {
+//
+//            val mineType = MineType.withName(Bytes.toString(e._2.getValue(Bytes.toBytes("metadata"), Bytes.toBytes("mine-type"))))
+//            println("%s | %s".format(Bytes.toString(e._1.get()), mineType))
+//
+//            if (mineType == MineType.TEXT_HTML) {
+//                val dom: Jerry = jerry(Bytes.toString(e._2.getValue(Bytes.toBytes("content"), Bytes.toBytes("data"))))
+//                FetcherService.fe fetchProperty(linksProp, dom)
+//                FetcherService.getProperty(titleProp, dom)
+//            }
+//
+//        })
 
         println(s"child page: -- $page")
-        FetcherService.doJob(page, rdd)
+        FetcherService.fetchPage(page, rdd)
 
         15 should equal(15)
     }
