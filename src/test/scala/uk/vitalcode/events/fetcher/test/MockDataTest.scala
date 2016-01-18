@@ -9,6 +9,7 @@ import org.apache.commons.codec.digest.DigestUtils
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.hbase._
 import org.apache.hadoop.hbase.client._
+import org.apache.hadoop.hbase.io.ImmutableBytesWritable
 import org.apache.hadoop.hbase.mapreduce.TableInputFormat
 import org.apache.hadoop.hbase.util.Bytes
 import org.apache.spark.rdd.RDD
@@ -17,10 +18,110 @@ import org.scalatest.{BeforeAndAfterAll, FunSuite, ShouldMatchers}
 import uk.vitalcode.events.fetcher.model.MineType._
 import uk.vitalcode.events.fetcher.model.{MineType, _}
 
-object Util extends Serializable {
+object FetcherService extends Serializable {
+
+    def doJob(page: Page, rdd: RDD[(ImmutableBytesWritable, client.Result)]): Unit = {
+        val result: Array[Result] = getPageDom(page, rdd).collect()
+
+        if (!result.isEmpty) {
+
+            result.head.props.foreach(p => {
+                println(s"found prop: ${p.name} -- ${p.value}")
+            })
+
+            result.head.pages.foreach(p => {
+                println(s"child page: -- ${p}")
+                doJob(p, rdd)
+            })
+        }
+    }
+
+    def getPageDom (currentPage: Page, rdd: RDD[(ImmutableBytesWritable, client.Result)]): RDD[Result] = {
+        rdd.filter(f => Bytes.toString(f._1.get()) == currentPage.url)
+            .map(m => jerry(Bytes.toString(m._2.getValue(Bytes.toBytes("content"), Bytes.toBytes("data")))))
+            .map(dom => {
+                //var childPages = Seq Seq[Page] //Set.empty[Page]
+                val currentPageProp: Set[Prop] = getPageProperties(currentPage, dom)
+                val childPages = collection.mutable.ArrayBuffer[Page]()
+
+                val pages = if (currentPage.ref == null) {
+                    println(s"Got [${currentPage.pages.size}] child pages of the current page")
+                    currentPage.pages
+                } else {
+                    val parentPage = FetcherService.getParent(currentPage, currentPage.ref)
+                    println((s"Got[${parentPage.pages.size}] child pages of the parent ${parentPage}"))
+                    parentPage.pages
+                }
+                println(s"Got child pages $pages")
+
+                pages.foreach(p => {
+                    dom.$(p.link).each(new JerryNodeFunction {
+                        override def onNode(node: Node, index: Int): Boolean = {
+                            val childPageUrl = node.getAttribute("href")
+                            //println(s"childPageUrl [$childPageUrl]")
+                            val childPage: Page = Page(p.id, p.ref, childPageUrl, p.link, p.props, p.pages, p.parent, p.isRow)
+                            //println(s"childPageUrl [$childPageUrl]")
+                            //getPageDom(childPage)
+                            childPages += childPage
+                            true
+                        }
+                    })
+                })
+                //val array  = childPages.toArray[Page]
+                Result(currentPageProp, childPages.seq)
+            })
+        //.map(p => p)
+        //            .foreach(p => {
+        //                println(s"child page :-- [$p]")
+        //})
+    }
+
+    val getPageProperties: (Page, Jerry) => Set[Prop] = (currentPage: Page, dom: Jerry) => {
+        currentPage.props.values.foreach(p => p.value = getProperty(p, dom))
+        currentPage.props.values.toSet[Prop]
+    }
+
+    def getProperty(prop: Prop, dom: Jerry): String = {
+        var propValue: String = null
+        dom.$(prop.css).each(new JerryNodeFunction {
+            override def onNode(node: Node, index: Int): Boolean = {
+                val value = prop.kind match {
+                    case PropType.Link => node.getAttribute("href")
+                    case _ => node.getTextContent
+                }
+                propValue = value.replaceAll( """\s{2,}""", " ").replaceAll( """^\s|\s$""", "")
+                println(s"${prop.name} -- $propValue")
+                true
+            }
+        })
+        propValue
+    }
+
     def getParent(page: Page, ref: String): Page = {
         if (page.id.equals(ref)) page else getParent(page.parent, ref)
     }
+
+
+//    def getPageDom(currentPage: Page): Unit = {
+//        rdd.filter(f => Bytes.toString(f._1.get()) == currentPage.url)
+//            .foreach(f => {
+//                val pageData: String = Bytes.toString(f._2.getValue(Bytes.toBytes("content"), Bytes.toBytes("data")))
+//                val pageDom: Jerry = jerry(pageData)
+//                currentPage.pages.foreach(p => {
+//                    pageDom.$(p.link).each(new JerryNodeFunction {
+//                        override def onNode(node: Node, index: Int): Boolean = {
+//                            val childPageUrl = node.getAttribute("href")
+//                            println(s"childPageUrl [$childPageUrl]")
+//                            val childPage: Page = Page(currentPage.id, currentPage.ref, childPageUrl, currentPage.link, currentPage.props, currentPage.pages, currentPage.parent, currentPage.isRow)
+//                            println(s"childPage [$childPage]")
+//                            //getPageDom(childPage)
+//                            true
+//                        }
+//                    })
+//                })
+//                //println(pageData)
+//            })
+//    }
 }
 
 case class Result(props: Set[Prop], pages: Seq[Page]) extends Serializable
@@ -69,14 +170,7 @@ class MockDataTest extends FunSuite with ShouldMatchers with BeforeAndAfterAll w
             )
             .build()
 
-        val result = rowsCount(page, sc)
-        println(result)
-        result should equal(15)
-    }
-
-    private def rowsCount(page: Page, sc: SparkContext): Long = {
-
-        val rdd = sc.newAPIHadoopRDD(hBaseConf, classOf[TableInputFormat],
+        val rdd: RDD[(ImmutableBytesWritable, client.Result)] = sc.newAPIHadoopRDD(hBaseConf, classOf[TableInputFormat],
             classOf[org.apache.hadoop.hbase.io.ImmutableBytesWritable],
             classOf[org.apache.hadoop.hbase.client.Result])
 
@@ -92,93 +186,6 @@ class MockDataTest extends FunSuite with ShouldMatchers with BeforeAndAfterAll w
             .setKind(PropType.Text)
             .build()
 
-        val getProperty: (Prop, Jerry) => String = (prop: Prop, dom: Jerry) => {
-            var propValue: String = null
-            dom.$(prop.css).each(new JerryNodeFunction {
-                override def onNode(node: Node, index: Int): Boolean = {
-                    val value = prop.kind match {
-                        case PropType.Link => node.getAttribute("href")
-                        case _ => node.getTextContent
-                    }
-                    propValue = value.replaceAll( """\s{2,}""", " ").replaceAll( """^\s|\s$""", "")
-                    println(s"${prop.name} -- $propValue")
-                    true
-                }
-            })
-            propValue
-        }
-
-        val getPageProperties: (Page, Jerry) => Set[Prop] = (currentPage: Page, dom: Jerry) => {
-            currentPage.props.values.foreach(p => p.value = getProperty(p, dom))
-            currentPage.props.values.toSet[Prop]
-        }
-
-//        val getParent: (Page, String) => Page = (page: Page, ref: String) => {
-//            if (page.id.equals(ref)) page else getParent(page.parent, ref)
-//        }
-
-
-        val getPageDom: (Page) => RDD[Result] = (currentPage: Page) => {
-            rdd.filter(f => Bytes.toString(f._1.get()) == currentPage.url)
-                .map(m => jerry(Bytes.toString(m._2.getValue(Bytes.toBytes("content"), Bytes.toBytes("data")))))
-                .map(dom => {
-                    //var childPages = Seq Seq[Page] //Set.empty[Page]
-                    val currentPageProp: Set[Prop] = getPageProperties(currentPage, dom)
-                    val childPages = collection.mutable.ArrayBuffer[Page]()
-
-                    val pages = if (currentPage.ref == null) {
-                        println(s"Got [${currentPage.pages.size}] child pages of the current page")
-                        currentPage.pages
-                    } else {
-                        val parentPage = Util.getParent(currentPage, currentPage.ref)
-                        println((s"Got[${parentPage.pages.size}] child pages of the parent ${parentPage}"))
-                        parentPage.pages
-                    }
-                    println(s"Got child pages $pages")
-
-                    pages.foreach(p => {
-                        dom.$(p.link).each(new JerryNodeFunction {
-                            override def onNode(node: Node, index: Int): Boolean = {
-                                val childPageUrl = node.getAttribute("href")
-                                //println(s"childPageUrl [$childPageUrl]")
-                                val childPage: Page = Page(p.id, p.ref, childPageUrl, p.link, p.props, p.pages, p.parent, p.isRow)
-                                //println(s"childPageUrl [$childPageUrl]")
-                                //getPageDom(childPage)
-                                childPages += childPage
-                                true
-                            }
-                        })
-                    })
-                    //val array  = childPages.toArray[Page]
-                    Result(currentPageProp, childPages.seq)
-                })
-            //.map(p => p)
-            //            .foreach(p => {
-            //                println(s"child page :-- [$p]")
-            //})
-        }
-
-        //        def getPageDom(currentPage: Page): Unit = {
-        //            rdd.filter(f => Bytes.toString(f._1.get()) == currentPage.url)
-        //                .foreach(f => {
-        //                    val pageData: String = Bytes.toString(f._2.getValue(Bytes.toBytes("content"), Bytes.toBytes("data")))
-        //                    val pageDom: Jerry = jerry(pageData)
-        //                    currentPage.pages.foreach(p => {
-        //                        pageDom.$(p.link).each(new JerryNodeFunction {
-        //                            override def onNode(node: Node, index: Int): Boolean = {
-        //                                val childPageUrl = node.getAttribute("href")
-        //                                println(s"childPageUrl [$childPageUrl]")
-        //                                val childPage: Page = Page(currentPage.id, currentPage.ref, childPageUrl, currentPage.link, currentPage.props, currentPage.pages, currentPage.parent, currentPage.isRow)
-        //                                println(s"childPage [$childPage]")
-        //                                //getPageDom(childPage)
-        //                                true
-        //                            }
-        //                        })
-        //                    })
-        //                    //println(pageData)
-        //                })
-        //        }
-
         rdd.foreach(e => println("%s | %s".format(
             Bytes.toString(e._1.get()),
             Bytes.toString(e._2.getValue(Bytes.toBytes("content"), Bytes.toBytes("hash"))))))
@@ -190,35 +197,16 @@ class MockDataTest extends FunSuite with ShouldMatchers with BeforeAndAfterAll w
 
             if (mineType == MineType.TEXT_HTML) {
                 val dom: Jerry = jerry(Bytes.toString(e._2.getValue(Bytes.toBytes("content"), Bytes.toBytes("data"))))
-                getProperty(linksProp, dom)
-                getProperty(titleProp, dom)
+                FetcherService.getProperty(linksProp, dom)
+                FetcherService.getProperty(titleProp, dom)
             }
 
         })
 
-
-        def doJob(page: Page): Unit = {
-            val result: Array[Result] = getPageDom(page).collect()
-
-            if (!result.isEmpty) {
-
-                result.head.props.foreach(p => {
-                    println(s"found prop: ${p.name} -- ${p.value}")
-                })
-
-                result.head.pages.foreach(p => {
-                    println(s"child page: -- ${p}")
-                    doJob(p)
-                })
-            }
-        }
-
-        //val newRDD = getPageDom(page)
         println(s"child page: -- $page")
-        doJob(page)
+        FetcherService.doJob(page, rdd)
 
-        rdd.count()
-
+        15 should equal(15)
     }
 
     private def prepareTestData(): Unit = {
