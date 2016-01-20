@@ -7,8 +7,12 @@ object PropType extends Enumeration with Serializable {
     val Text, Date, Link = Value
 }
 
-case class Prop(name: String, css: String, kind: PropType) extends Serializable{
+case class Prop(name: String, css: String, kind: PropType) extends Serializable {
     var value: Set[String] = Set.empty[String]
+
+    def reset(): Unit = {
+        value = Set.empty[String]
+    }
 }
 
 case class PropBuilder() extends Builder {
