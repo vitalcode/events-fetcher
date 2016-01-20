@@ -5,9 +5,12 @@ import java.util.UUID
 import jodd.jerry.Jerry._
 import jodd.jerry.{Jerry, JerryNodeFunction}
 import jodd.lagarto.dom.Node
+import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.hbase.client
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable
+import org.apache.hadoop.hbase.mapreduce.TableInputFormat
 import org.apache.hadoop.hbase.util.Bytes
+import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
 import uk.vitalcode.events.fetcher.common.Log
 import uk.vitalcode.events.fetcher.model._
@@ -34,7 +37,12 @@ object FetcherService extends Serializable with Log {
     var rowID: String = ""
     var dataRowBuilder: DataRowBuilder = DataRowBuilder()
 
-    def fetchPage(page: Page, rdd: RDD[(ImmutableBytesWritable, client.Result)]): DataTable = {
+    def fetchPage(page: Page, sc: SparkContext, hBaseConf: Configuration): DataTable = {
+
+        val rdd: RDD[(ImmutableBytesWritable, client.Result)] = sc.newAPIHadoopRDD(hBaseConf, classOf[TableInputFormat],
+            classOf[org.apache.hadoop.hbase.io.ImmutableBytesWritable],
+            classOf[org.apache.hadoop.hbase.client.Result])
+
         val builder: DataTableBuilder = DataTableBuilder()
         fetchPage(page, rdd, builder)
 

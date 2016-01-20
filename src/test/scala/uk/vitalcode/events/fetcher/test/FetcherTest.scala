@@ -13,7 +13,8 @@ import org.scalatest._
 import uk.vitalcode.events.fetcher.common.Log
 import uk.vitalcode.events.fetcher.model.MineType._
 
-trait FetcherTest extends FunSuite with ShouldMatchers with BeforeAndAfterAll with Serializable with Log {
+trait FetcherTest extends WordSpec with ShouldMatchers with BeforeAndAfterEach with Log {
+    this: Suite =>
 
     var sc: SparkContext = _
     var hBaseConn: Connection = _
@@ -63,7 +64,7 @@ trait FetcherTest extends FunSuite with ShouldMatchers with BeforeAndAfterAll wi
         Stream.continually(stream.read).takeWhile(_ != -1).map(_.toByte).toArray
     }
 
-    override protected def beforeAll(): Unit = {
+    override protected def beforeEach(): Unit = {
         val sparkConf: SparkConf = new SparkConf().setAppName("events-fetcher-test")
             .setMaster("local[1]")
         sc = new SparkContext(sparkConf)
@@ -76,7 +77,7 @@ trait FetcherTest extends FunSuite with ShouldMatchers with BeforeAndAfterAll wi
         prepareTestData()
     }
 
-    override protected def afterAll(): Unit = {
+    override protected def afterEach(): Unit = {
         sc.stop()
         hBaseConn.close()
     }
