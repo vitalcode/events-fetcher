@@ -14,7 +14,6 @@ import uk.vitalcode.events.fetcher.common.Log
 import uk.vitalcode.events.fetcher.model.MineType._
 
 trait FetcherTest extends WordSpec with ShouldMatchers with BeforeAndAfterEach with Log {
-    this: Suite =>
 
     var sc: SparkContext = _
     var hBaseConn: Connection = _
