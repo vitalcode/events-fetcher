@@ -1,28 +1,20 @@
 package uk.vitalcode.events.fetcher.test
 
-import org.apache.hadoop.hbase._
-import org.apache.hadoop.hbase.io.ImmutableBytesWritable
-import org.apache.hadoop.hbase.mapreduce.TableInputFormat
-import org.apache.spark.rdd.RDD
 import uk.vitalcode.events.fetcher.model.{MineType, _}
 import uk.vitalcode.events.fetcher.service.FetcherService
 
 
 class FetchCambridgeScienceCentreTest extends FetcherTest {
 
-    test("Fetching data from Cambridge science centre web site") {
-
-        val page = buildTestPage()
-        val expected: DataTable = buildExpectedFetchedData()
-
-        val rdd: RDD[(ImmutableBytesWritable, client.Result)] = sc.newAPIHadoopRDD(hBaseConf, classOf[TableInputFormat],
-            classOf[org.apache.hadoop.hbase.io.ImmutableBytesWritable],
-            classOf[org.apache.hadoop.hbase.client.Result])
-
-        val actual = FetcherService.fetchPage(page, rdd)
-        FetcherService.logOutcame() //TODO remove
-
-        actual should equal(expected)
+    "A Fetcher" when {
+        "fetching data from Cambridge science centre web site" should {
+            "should fetch all expected property values" in {
+                val page = buildTestPage()
+                val actual = FetcherService.fetchPage(page, sc, hBaseConf)
+                FetcherService.logOutcame()
+                actual should equal(buildExpectedFetchedData())
+            }
+        }
     }
 
     private def buildTestPage(): Page = {
