@@ -1,6 +1,7 @@
 package uk.vitalcode.events.fetcher.test
 
 import java.io.InputStream
+import java.util.UUID
 
 import jodd.jerry.Jerry._
 import jodd.jerry.{Jerry, JerryNodeFunction}
@@ -12,27 +13,132 @@ import org.apache.hadoop.hbase.client._
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable
 import org.apache.hadoop.hbase.mapreduce.TableInputFormat
 import org.apache.hadoop.hbase.util.Bytes
-import org.apache.log4j.{Level, Logger}
+import org.apache.log4j.Logger
 import org.apache.spark.rdd.RDD
 import org.apache.spark.{SparkConf, SparkContext}
 import org.scalatest.{BeforeAndAfterAll, FunSuite, ShouldMatchers}
 import uk.vitalcode.events.fetcher.model.MineType._
 import uk.vitalcode.events.fetcher.model.{MineType, _}
 
+import scala.collection.mutable
+
+
+case class DataTable(dataRows: Set[DataRow]) extends Serializable
+
+case class DataTableBuilder() extends Builder {
+    private var dataRows: Set[DataRow] = Set.empty[DataRow]
+
+    def addRow(dataRowBuilder: DataRowBuilder): DataTableBuilder = {
+        this.dataRows += dataRowBuilder.build()
+        this
+    }
+
+    override type t = DataTable
+
+    override def build(): DataTable = new DataTable(dataRows)
+}
+
+
+case class DataRow(row: String, columns: Map[String, Set[String]]) extends Serializable
+
+case class DataRowBuilder() extends Builder {
+    private var columns: Map[String, Set[String]] = Map.empty[String, Set[String]]
+    private var row: String = _
+
+    def setRowId(row: String): DataRowBuilder = {
+        this.row = row
+        this
+    }
+
+    def addColumn(column: String, value: String*): DataRowBuilder = {
+        addColumn(column, value.toSet)
+        this
+    }
+
+    def addColumn(column: String, value: Set[String]): DataRowBuilder = {
+        if (this.columns.contains(column)){
+            val prev: Option[Set[String]] = this.columns.get(column)
+            val newVal = prev.get ++ value
+            this.columns += (column -> newVal)
+        } else {
+            this.columns += (column -> value)
+        }
+        this
+    }
+
+    override type t = DataRow
+
+    override def build(): DataRow = new DataRow(row, columns)
+}
+
+
 case class FetchResult(page: Page, childPages: Seq[Page]) extends Serializable
 
-object FetcherService extends Serializable {
+object FetcherService extends Serializable with log {
 
-    // TODO should return rows of fetched data
-    def fetchPage(page: Page, rdd: RDD[(ImmutableBytesWritable, client.Result)]): Unit = {
+    var table: mutable.Map[String, mutable.Map[String, String]] = new mutable.HashMap[String, mutable.Map[String, String]]
+    var rowColumns: mutable.Map[String, String] = new mutable.HashMap[String, String]
+
+    def logOutcame(): Unit = {
+        LOG.info(s"inside logOutcame table rows [${table.size}], columns [${rowColumns.size}]")
+        table += (rowID.concat(UUID.randomUUID().toString) -> rowColumns)
+
+        table.foreach(t => {
+            LOG.info(s"--- row: ${t._1}")
+            t._2.foreach(col => {
+                LOG.info(s"--- --- column: ${col._1} --- ${col._2}")
+            })
+        })
+    }
+
+    var rowID: String = ""
+    var dataRowBuilder: DataRowBuilder = DataRowBuilder()
+
+    def fetchPage(page: Page, rdd: RDD[(ImmutableBytesWritable, client.Result)]): DataTable = {
+        val builder: DataTableBuilder = DataTableBuilder()
+        fetchPage(page, rdd, builder)
+
+        dataRowBuilder.setRowId(rowID)
+        builder.addRow(dataRowBuilder)
+
+        builder.build()
+    }
+
+    def fetchPage(page: Page, rdd: RDD[(ImmutableBytesWritable, client.Result)], builder: DataTableBuilder): Unit = {
+
+        LOG.info(s"Fetching data for $page")
         fetchPageData(page, rdd) match {
             case Some(result) =>
-                result.page.props.values.foreach(p => {
-                    println(s"found page prop: ${p.name} -- ${p.value}")
+
+                if (result.page.isRow && rowID.nonEmpty) {
+                    table += (s"%s___%s".format(rowID, UUID.randomUUID().toString) -> rowColumns)
+                    dataRowBuilder.setRowId(rowID)
+                    builder.addRow(dataRowBuilder)
+
+                    rowColumns = new mutable.HashMap[String, String]
+                    dataRowBuilder = DataRowBuilder()
+                    rowID = ""
+                }
+
+                if (result.page.isRow && rowID.isEmpty) {
+                    rowID = page.url
+                    //dataRowBuilder.setRowId(page.url)
+                }
+
+                result.page.props.values.foreach(prop => {
+                    prop.value.foreach(value => {
+                        LOG.info(s"Fetched page prop: ${prop.name} -- $value")
+                        rowColumns += (s"%s___%s".format(prop.name, UUID.randomUUID().toString) -> value)
+                    })
+                    dataRowBuilder.addColumn(prop.name, prop.value)
+
                 })
+                LOG.info(s"Fetched child pages ${result.childPages}")
+
+
                 result.childPages.foreach(p => {
                     println(s"fetching child page: -- $p")
-                    fetchPage(p, rdd)
+                    fetchPage(p, rdd, builder)
                 })
             case None =>
         }
@@ -42,40 +148,39 @@ object FetcherService extends Serializable {
         rdd.filter(row => Bytes.toString(row._1.get()) == page.url)
             .map(row => jerry(Bytes.toString(row._2.getValue(Bytes.toBytes("content"), Bytes.toBytes("data")))))
             .map(dom => {
+                // find child pages
                 val childPages = collection.mutable.ArrayBuffer[Page]()
-                getChildPages(page).foreach(p => {
-                    if (p.link != null) {
-                        dom.$(p.link).each(new JerryNodeFunction {
-                            override def onNode(node: Node, index: Int): Boolean = {
-                                val childPageUrl = node.getAttribute("href")
-                                val childPage: Page = Page(p.id, p.ref, childPageUrl, p.link, p.props, p.pages, p.parent, p.isRow)
-                                childPages += childPage
-                                true
-                            }
-                        })
-                    } else {
-                        childPages += p
-                    }
-                })
+                    // 1. treat page with self child pages
+                    page.pages.foreach(p => {
+                        val cp: Page = if (p.ref == null) p else getParentPageByRef(p, p.ref)
+                        if (p.link != null) {
+                            dom.$(p.link).each(new JerryNodeFunction {
+                                override def onNode(node: Node, index: Int): Boolean = {
+                                    val childPageUrl = node.getAttribute("href")
+                                    val childPage: Page = Page(cp.id, cp.ref, childPageUrl, cp.link, cp.props, cp.pages, cp.parent, cp.isRow)
+                                    childPages += childPage
+                                    true
+                                }
+                            })
+                        }
+                    })
+
                 fetchPageProperties(page, dom)
-                FetchResult(page, childPages)
+                FetchResult(page, childPages.toSeq)
             })
             .collect()
             .headOption
     }
 
-    // Self child or parent child
-    private def getChildPages(page: Page): Set[Page] = {
-        if (page.ref == null) {
-            println(s"Got [${page.pages.size}] child pages of the current page")
-            page.pages
-        } else {
-            val parentPage = FetcherService.getParentPageByRef(page, page.ref)
-            parentPage.url = page.url
-            println(s"Got reference to the parent page [$parentPage]")
-            Set(parentPage)
-        }
-    }
+//    private def getChildPages(page: Page): Set[Page] = {
+//        if (page.ref == null) {
+//            page.pages
+//        } else {
+//            val parentPage = FetcherService.getParentPageByRef(page, page.ref)
+//            parentPage.url = page.url
+//            Set(parentPage)
+//        }
+//    }
 
     private def getParentPageByRef(page: Page, ref: String): Page = {
         if (page.id.equals(ref)) page else getParentPageByRef(page.parent, ref)
@@ -86,6 +191,7 @@ object FetcherService extends Serializable {
     }
 
     private def fetchProperty(prop: Prop, dom: Jerry): Unit = {
+        prop.reset()
         dom.$(prop.css).each(new JerryNodeFunction {
             override def onNode(node: Node, index: Int): Boolean = {
                 val value = prop.kind match {
@@ -124,16 +230,16 @@ object FetcherService extends Serializable {
 }
 
 trait log {
-    val LOG = Logger.getLogger(this.getClass)// classOf[MockDataTest])
+    val LOG = Logger.getLogger(this.getClass) // classOf[MockDataTest])
 }
 
-class MockDataTest extends FunSuite with ShouldMatchers with BeforeAndAfterAll with Serializable with log{
+class MockDataTest extends FunSuite with ShouldMatchers with BeforeAndAfterAll with Serializable with log {
     //with LazyLogging
 
-//    Logger.getLogger("org").setLevel(Level.ERROR)
-//    Logger.getLogger("akka").setLevel(Level.ERROR)
+    //    Logger.getLogger("org").setLevel(Level.ERROR)
+    //    Logger.getLogger("akka").setLevel(Level.ERROR)
 
-//    private val LOG = Logger.getLogger(this.getClass)// classOf[MockDataTest])
+    //    private val LOG = Logger.getLogger(this.getClass)// classOf[MockDataTest])
     LOG.error("Error")
     LOG.info("INFO")
 
@@ -149,6 +255,7 @@ class MockDataTest extends FunSuite with ShouldMatchers with BeforeAndAfterAll w
         val page: Page = PageBuilder()
             .setId("list")
             .setUrl("http://www.cambridgesciencecentre.org/whats-on/list")
+            .isRow(true)
             .addProp(PropBuilder()
                 .setName("title")
                 .setCss("div.whats-on ul.omega > li > h2")
@@ -183,39 +290,67 @@ class MockDataTest extends FunSuite with ShouldMatchers with BeforeAndAfterAll w
             classOf[org.apache.hadoop.hbase.io.ImmutableBytesWritable],
             classOf[org.apache.hadoop.hbase.client.Result])
 
-//        val linksProp: Prop = PropBuilder()
-//            .setName("link")
-//            .setCss("div.main_wrapper > section > article > ul > li > h2 > a")
-//            .setKind(PropType.Link)
-//            .build()
-//
-//        val titleProp: Prop = PropBuilder()
-//            .setName("title")
-//            .setCss("div.whats-on ul.omega > li > h2")
-//            .setKind(PropType.Text)
-//            .build()
+        //        val linksProp: Prop = PropBuilder()
+        //            .setName("link")
+        //            .setCss("div.main_wrapper > section > article > ul > li > h2 > a")
+        //            .setKind(PropType.Link)
+        //            .build()
+        //
+        //        val titleProp: Prop = PropBuilder()
+        //            .setName("title")
+        //            .setCss("div.whats-on ul.omega > li > h2")
+        //            .setKind(PropType.Text)
+        //            .build()
 
-//        rdd.foreach(e => println("%s | %s".format(
-//            Bytes.toString(e._1.get()),
-//            Bytes.toString(e._2.getValue(Bytes.toBytes("content"), Bytes.toBytes("hash"))))))
-//
-//        rdd.foreach(e => {
-//
-//            val mineType = MineType.withName(Bytes.toString(e._2.getValue(Bytes.toBytes("metadata"), Bytes.toBytes("mine-type"))))
-//            println("%s | %s".format(Bytes.toString(e._1.get()), mineType))
-//
-//            if (mineType == MineType.TEXT_HTML) {
-//                val dom: Jerry = jerry(Bytes.toString(e._2.getValue(Bytes.toBytes("content"), Bytes.toBytes("data"))))
-//                FetcherService.fe fetchProperty(linksProp, dom)
-//                FetcherService.getProperty(titleProp, dom)
-//            }
-//
-//        })
+        //        rdd.foreach(e => println("%s | %s".format(
+        //            Bytes.toString(e._1.get()),
+        //            Bytes.toString(e._2.getValue(Bytes.toBytes("content"), Bytes.toBytes("hash"))))))
+        //
+        //        rdd.foreach(e => {
+        //
+        //            val mineType = MineType.withName(Bytes.toString(e._2.getValue(Bytes.toBytes("metadata"), Bytes.toBytes("mine-type"))))
+        //            println("%s | %s".format(Bytes.toString(e._1.get()), mineType))
+        //
+        //            if (mineType == MineType.TEXT_HTML) {
+        //                val dom: Jerry = jerry(Bytes.toString(e._2.getValue(Bytes.toBytes("content"), Bytes.toBytes("data"))))
+        //                FetcherService.fe fetchProperty(linksProp, dom)
+        //                FetcherService.getProperty(titleProp, dom)
+        //            }
+        //
+        //        })
 
         println(s"child page: -- $page")
-        FetcherService.fetchPage(page, rdd)
+        val actual = FetcherService.fetchPage(page, rdd)
+        FetcherService.logOutcame()
 
-        15 should equal(15)
+        val expected: DataTable = DataTableBuilder()
+            .addRow(DataRowBuilder().setRowId("http://www.cambridgesciencecentre.org/whats-on/list")
+                .addColumn("title", "Destination Space: Join the crew!", "Explore Your Universe: Star Light, Star Bright")
+                .addColumn("description",
+                    "Destination Space! Tim Peake, the first British European Space Agency astronaut, is heading into space in December. Join us to explore his mission to the ISS. From launching a rocket to experiencing life in microgravity, this show is full of amazing demonstrations. An out of this world show not to be missed!",
+                    "Explore Your Universe in our Cosmic show as we take a look at the stars! Discover how we can use hidden light and special cameras to discover more about our world, our Sun and other solar systems.")
+                .addColumn("cost",
+                    "Please be aware that normal admission charges to the centre apply.",
+                    "Credit: NASA, H.E. Bond and E. Nelan (Space Telescope Science Institute, Baltimore, Md.); M. Barstow and M. Burleigh (University of Leicester, U.K.); and J.B. Holberg (University of Arizona)"))
+            .addRow(DataRowBuilder().setRowId("http://www.cambridgesciencecentre.org/whats-on/list/?page=2")
+                .addColumn("title", "Other Worlds", "Sunday Science 2016")
+                .addColumn("description",
+                    "Join us for a fun-filled day of non-stop shows and hands-on workshops for all the family.",
+                    "The first planet orbiting another star was discovered by Didier Queloz in 1995; now thousands more have been found. Discuss with Professor Queloz what these exotic worlds may be like and how we are continuing our search.")
+                .addColumn("cost",
+                    "Part of the Cambridge Science Festival.",
+                    "Might such exotic environments support life and how would we recognise it? Dr William Bains will speculate on possibilities for simple, complex and intelligent life on other worlds."))
+            .addRow(DataRowBuilder().setRowId("http://www.cambridgesciencecentre.org/whats-on/list/?page=3")
+                .addColumn("title", "Half Term 13th-21st February 10-5", "Electric Universe")
+                .addColumn("description",
+                    "Engineers from Airbus Defence and Space will be with over weekend, 13/14th February, to talk to you about engineering spacecraft and rovers to explore other planets. Get hands on with the technology, become a clean room engineer and join in some fun workshop activities.",
+                    "Join us for a unique and controversial tour of the Universe. This talk follows contemporary speculation into the role that electro-dynamics plays in forming the objects we see in modern astronomy.")
+                .addColumn("cost",
+                    "Then throughout the week scientists from the Cambridge Exoplanet Research Group will be visiting to talk out their search for other worlds and what these exotic planets might be like. Zoom in to take a look at some of them or visit the Exoplanet Travel Bureau to plan a truly exotic holiday.",
+                    "Doors open at 6.30pm, with a 7pm start."))
+            .build()
+
+        actual should equal(expected)
     }
 
     private def prepareTestData(): Unit = {
@@ -327,9 +462,5 @@ class MockDataTest extends FunSuite with ShouldMatchers with BeforeAndAfterAll w
     }
 
     // TODO refactor
-    // TODO collect all properties in separate collection ??? => Map[row(event item), Map[column(prop), value]]
-    // TODO use isRow Page property
-    // TODO Logging in scala 2.10
-    // TODO use isRow page model property
 }
 
