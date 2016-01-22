@@ -1,6 +1,6 @@
 package uk.vitalcode.events.fetcher.model
 
-case class DataRow(row: String, columns: Map[String, Set[String]]) extends Serializable
+case class DataRow(rowId: String, columns: Map[String, Set[String]]) extends Serializable
 
 case class DataRowBuilder() extends Builder {
     private var columns: Map[String, Set[String]] = Map.empty[String, Set[String]]
@@ -26,6 +26,9 @@ case class DataRowBuilder() extends Builder {
         }
         this
     }
+
+    def isEmpty(): Boolean = columns.isEmpty
+    def reset(): Unit = columns = Map.empty[String, Set[String]]
 
     override type t = DataRow
 

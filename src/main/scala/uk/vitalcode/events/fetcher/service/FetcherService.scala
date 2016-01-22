@@ -1,7 +1,5 @@
 package uk.vitalcode.events.fetcher.service
 
-import java.util.UUID
-
 import jodd.jerry.Jerry._
 import jodd.jerry.{Jerry, JerryNodeFunction}
 import jodd.lagarto.dom.Node
@@ -15,27 +13,7 @@ import org.apache.spark.rdd.RDD
 import uk.vitalcode.events.fetcher.common.Log
 import uk.vitalcode.events.fetcher.model._
 
-import scala.collection.mutable
-
 object FetcherService extends Serializable with Log {
-
-    var table: mutable.Map[String, mutable.Map[String, String]] = new mutable.HashMap[String, mutable.Map[String, String]]
-    var rowColumns: mutable.Map[String, String] = new mutable.HashMap[String, String]
-
-    def logOutcame(): Unit = {
-        log.info(s"inside logOutcame table rows [${table.size}], columns [${rowColumns.size}]")
-        table += (rowID.concat(UUID.randomUUID().toString) -> rowColumns)
-
-        table.foreach(t => {
-            log.info(s"--- row: ${t._1}")
-            t._2.foreach(col => {
-                log.info(s"--- --- column: ${col._1} --- ${col._2}")
-            })
-        })
-    }
-
-    var rowID: String = ""
-    var dataRowBuilder: DataRowBuilder = DataRowBuilder()
 
     def fetchPage(page: Page, sc: SparkContext, hBaseConf: Configuration): DataTable = {
 
@@ -43,50 +21,40 @@ object FetcherService extends Serializable with Log {
             classOf[org.apache.hadoop.hbase.io.ImmutableBytesWritable],
             classOf[org.apache.hadoop.hbase.client.Result])
 
-        val builder: DataTableBuilder = DataTableBuilder()
-        fetchPage(page, rdd, builder)
+        val tableBuilder: DataTableBuilder = DataTableBuilder()
+        val rowBuilder: DataRowBuilder = DataRowBuilder()
 
-        dataRowBuilder.setRowId(rowID)
-        builder.addRow(dataRowBuilder)
+        fetchPage(page, rdd, tableBuilder, rowBuilder)
+        tableBuilder.addRow(rowBuilder)
 
-        builder.build()
+        val table = tableBuilder.build()
+        log.info(table.toString())
+        table
     }
 
-    def fetchPage(page: Page, rdd: RDD[(ImmutableBytesWritable, client.Result)], builder: DataTableBuilder): Unit = {
-
+    def fetchPage(page: Page, rdd: RDD[(ImmutableBytesWritable, client.Result)], builder: DataTableBuilder, dataRowBuilder: DataRowBuilder): Unit = {
         log.info(s"Fetching data for $page")
         fetchPageData(page, rdd) match {
             case Some(result) =>
-
-                if (result.page.isRow && rowID.nonEmpty) {
-                    table += (s"%s___%s".format(rowID, UUID.randomUUID().toString) -> rowColumns)
-                    dataRowBuilder.setRowId(rowID)
-                    builder.addRow(dataRowBuilder)
-
-                    rowColumns = new mutable.HashMap[String, String]
-                    dataRowBuilder = DataRowBuilder()
-                    rowID = ""
+                if (result.page.isRow) {
+                    if (!dataRowBuilder.isEmpty()) {
+                        builder.addRow(dataRowBuilder)
+                        dataRowBuilder.reset()
+                        dataRowBuilder.setRowId(page.url)
+                    } else {
+                        dataRowBuilder.setRowId(page.url)
+                    }
                 }
-
-                if (result.page.isRow && rowID.isEmpty) {
-                    rowID = page.url
-                    //dataRowBuilder.setRowId(page.url)
-                }
-
                 result.page.props.values.foreach(prop => {
                     prop.value.foreach(value => {
-                        log.info(s"Fetched page prop: ${prop.name} -- $value")
-                        rowColumns += (s"%s___%s".format(prop.name, UUID.randomUUID().toString) -> value)
+                        log.info(s"Fetched page property [${prop.name}] -- [$value]")
                     })
+
                     dataRowBuilder.addColumn(prop.name, prop.value)
-
                 })
-                log.info(s"Fetched child pages ${result.childPages}")
-
-
+                log.info(s"Fetched child pages [${result.childPages}]")
                 result.childPages.foreach(p => {
-                    println(s"fetching child page: -- $p")
-                    fetchPage(p, rdd, builder)
+                    fetchPage(p, rdd, builder, dataRowBuilder)
                 })
             case None =>
         }
@@ -96,17 +64,15 @@ object FetcherService extends Serializable with Log {
         rdd.filter(row => Bytes.toString(row._1.get()) == page.url)
             .map(row => jerry(Bytes.toString(row._2.getValue(Bytes.toBytes("content"), Bytes.toBytes("data")))))
             .map(dom => {
-                // find child pages
-                val childPages = collection.mutable.ArrayBuffer[Page]()
-                // 1. treat page with self child pages
-                page.pages.foreach(p => {
-                    val cp: Page = if (p.ref == null) p else getParentPageByRef(p, p.ref)
-                    if (p.link != null) {
-                        dom.$(p.link).each(new JerryNodeFunction {
+                val derivedPages = collection.mutable.ArrayBuffer[Page]()
+                page.pages.foreach(childPages => {
+                    val nextPages: Page = if (childPages.ref == null) childPages else getParentPageByRef(childPages, childPages.ref)
+                    if (childPages.link != null) {
+                        dom.$(childPages.link).each(new JerryNodeFunction {
                             override def onNode(node: Node, index: Int): Boolean = {
                                 val childPageUrl = node.getAttribute("href")
-                                val childPage: Page = Page(cp.id, cp.ref, childPageUrl, cp.link, cp.props, cp.pages, cp.parent, cp.isRow)
-                                childPages += childPage
+                                val childPage: Page = Page(nextPages.id, nextPages.ref, childPageUrl, nextPages.link, nextPages.props, nextPages.pages, nextPages.parent, nextPages.isRow)
+                                derivedPages += childPage
                                 true
                             }
                         })
@@ -114,7 +80,7 @@ object FetcherService extends Serializable with Log {
                 })
 
                 fetchPageProperties(page, dom)
-                FetchResult(page, childPages.toSeq)
+                FetchResult(page, derivedPages.toSeq)
             })
             .collect()
             .headOption
@@ -137,32 +103,12 @@ object FetcherService extends Serializable with Log {
                     case _ => node.getTextContent
                 }
                 val propValue: String = value.replaceAll( """\s{2,}""", " ").replaceAll( """^\s|\s$""", "")
-                println(s"${prop.name} -- $propValue")
                 prop.value += propValue
                 true
             }
         })
     }
-
-
-    //    def getPageDom(currentPage: Page): Unit = {
-    //        rdd.filter(f => Bytes.toString(f._1.get()) == currentPage.url)
-    //            .foreach(f => {
-    //                val pageData: String = Bytes.toString(f._2.getValue(Bytes.toBytes("content"), Bytes.toBytes("data")))
-    //                val pageDom: Jerry = jerry(pageData)
-    //                currentPage.pages.foreach(p => {
-    //                    pageDom.$(p.link).each(new JerryNodeFunction {
-    //                        override def onNode(node: Node, index: Int): Boolean = {
-    //                            val childPageUrl = node.getAttribute("href")
-    //                            println(s"childPageUrl [$childPageUrl]")
-    //                            val childPage: Page = Page(currentPage.id, currentPage.ref, childPageUrl, currentPage.link, currentPage.props, currentPage.pages, currentPage.parent, currentPage.isRow)
-    //                            println(s"childPage [$childPage]")
-    //                            //getPageDom(childPage)
-    //                            true
-    //                        }
-    //                    })
-    //                })
-    //                //println(pageData)
-    //            })
-    //    }
 }
+
+// TODO run from client main app
+// TODO run on yarn mode spark

@@ -20,7 +20,7 @@ trait FetcherTest extends WordSpec with ShouldMatchers with BeforeAndAfterEach w
     var hBaseConf: Configuration = _
     val testTable: TableName = TableName.valueOf("testTable")
 
-    def putTestData()
+    protected def putTestData()
 
     protected def prepareTestData(): Unit = {
         createTestTable()
