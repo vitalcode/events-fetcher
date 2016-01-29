@@ -32,14 +32,14 @@ trait FetcherTest extends WordSpec with ShouldMatchers with BeforeAndAfterEach w
         if (admin.isTableAvailable(testTable)) {
             admin.disableTable(testTable)
             admin.deleteTable(testTable)
-            println(s"Test table [$testTable] deleted")
+            log.info(s"Test table [$testTable] deleted")
         }
 
         val tableDescriptor: HTableDescriptor = new HTableDescriptor(testTable)
         tableDescriptor.addFamily(new HColumnDescriptor("content"))
         tableDescriptor.addFamily(new HColumnDescriptor("metadata"))
         admin.createTable(tableDescriptor)
-        println(s"New Test table [$testTable] created")
+        log.info(s"New Test table [$testTable] created")
 
         admin.close()
     }
@@ -52,7 +52,7 @@ trait FetcherTest extends WordSpec with ShouldMatchers with BeforeAndAfterEach w
         put.addColumn(Bytes.toBytes("content"), Bytes.toBytes("data"), data)
         put.addColumn(Bytes.toBytes("content"), Bytes.toBytes("hash"), Bytes.toBytes(DigestUtils.sha1Hex(data)))
         put.addColumn(Bytes.toBytes("metadata"), Bytes.toBytes("mine-type"), Bytes.toBytes(mineType.toString))
-        println(s"Add row [$url] with content of MINE type [$mineType] to the test table [$testTable]")
+        log.info(s"Add row [$url] with content of MINE type [$mineType] to the test table [$testTable]")
         table.put(put)
 
         table.close()

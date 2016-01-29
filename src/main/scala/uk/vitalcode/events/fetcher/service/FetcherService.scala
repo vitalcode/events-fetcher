@@ -45,12 +45,12 @@ object FetcherService extends Serializable with Log {
                         dataRowBuilder.setRowId(page.url)
                     }
                 }
-                result.page.props.values.foreach(prop => {
-                    prop.value.foreach(value => {
+                result.page.props.foreach(prop => {
+                    prop.values.foreach(value => {
                         log.info(s"Fetched page property [${prop.name}] -- [$value]")
                     })
 
-                    dataRowBuilder.addColumn(prop.name, prop.value)
+                    dataRowBuilder.addColumn(prop.name, PropertyService.getFormattedValues(prop))
                 })
                 log.info(s"Fetched child pages [${result.childPages}]")
                 result.childPages.foreach(p => {
@@ -91,22 +91,19 @@ object FetcherService extends Serializable with Log {
     }
 
     private def fetchPageProperties(currentPage: Page, dom: Jerry): Unit = {
-        currentPage.props.values.foreach(p => fetchProperty(p, dom))
+        currentPage.props = currentPage.props.map(p => fetchProperty(p, dom))
     }
 
-    private def fetchProperty(prop: Prop, dom: Jerry): Unit = {
-        prop.reset()
-        dom.$(prop.css).each(new JerryNodeFunction {
+    private def fetchProperty(prop: Prop, dom: Jerry): Prop = {
+        var propReset = prop.copy(values = Set.empty[String])
+        dom.$(propReset.css).each(new JerryNodeFunction {
             override def onNode(node: Node, index: Int): Boolean = {
-                val value = prop.kind match {
-                    case PropType.Link => node.getAttribute("href")
-                    case _ => node.getTextContent
-                }
-                val propValue: String = value.replaceAll( """\s{2,}""", " ").replaceAll( """^\s|\s$""", "")
-                prop.value += propValue
+                val value = node.getTextContent.replaceAll( """\s{2,}""", " ").replaceAll( """^\s|\s$""", "")
+                propReset = propReset.copy(values = propReset.values + value)
                 true
             }
         })
+        propReset
     }
 }
 

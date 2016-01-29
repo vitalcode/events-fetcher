@@ -4,16 +4,10 @@ import uk.vitalcode.events.fetcher.model.PropType.PropType
 
 object PropType extends Enumeration with Serializable {
     type PropType = Value
-    val Text, Date, Link = Value
+    val Text, Date = Value
 }
 
-case class Prop(name: String, css: String, kind: PropType) extends Serializable {
-    var value: Set[String] = Set.empty[String]
-
-    def reset(): Unit = {
-        value = Set.empty[String]
-    }
-}
+case class Prop(name: String, css: String, kind: PropType, values: Set[String]) extends Serializable
 
 case class PropBuilder() extends Builder {
     private var name: String = _
@@ -37,5 +31,5 @@ case class PropBuilder() extends Builder {
 
     override type t = Prop
 
-    override def build(): Prop = new Prop(name, css, kind)
+    override def build(): Prop = new Prop(name, css, kind, Set.empty[String])
 }

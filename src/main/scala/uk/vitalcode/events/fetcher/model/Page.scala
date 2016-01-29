@@ -2,13 +2,13 @@ package uk.vitalcode.events.fetcher.model
 
 case class Page(var id: String, var ref: String,
                 var url: String, var link: String,
-                var props: Map[String, Prop], var pages: Set[Page],
+                var props: Set[Prop], var pages: Set[Page],
                 var parent: Page, var isRow: Boolean) extends Serializable {
 
     def this() = this(
         null, null,
         null, null,
-        collection.immutable.Map[String, Prop](),
+        collection.immutable.Set[Prop](),
         collection.immutable.Set(),
         null, false
     )
@@ -71,8 +71,7 @@ case class PageBuilder() extends Builder {
     }
 
     def addProp(propBuilder: PropBuilder): PageBuilder = {
-        val prop = propBuilder.build()
-        page.props += (prop.name -> prop)
+        page.props += propBuilder.build()
         this
     }
 
