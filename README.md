@@ -59,3 +59,28 @@ Don’t actually add the file(s), just show if they exist and/or will be ignored
 ```
 git add . --dry-run
 ```
+
+### git log
+lists the commits made in that repository in reverse chronological order
+```
+git log
+```
+
+shows the difference introduced in each 2 last commit
+```
+git log -p -2
+```
+
+### Discard changes
+
+discard changes in the working copy that are not in the index (not added)
+```
+git checkout -- .
+git checkout path/to/file/to/revert
+```
+
+revert to current commit 
+(http://stackoverflow.com/questions/927358/how-do-you-undo-the-last-commit)
+```
+git reset HEAD
+```

@@ -12,6 +12,8 @@ import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
 import uk.vitalcode.events.fetcher.common.Log
 import uk.vitalcode.events.fetcher.model._
+import uk.vitalcode.events.fetcher.parser.ParserLike
+import scala.reflect.runtime.universe._
 
 object FetcherService extends Serializable with Log {
 
@@ -50,7 +52,7 @@ object FetcherService extends Serializable with Log {
                         log.info(s"Fetched page property [${prop.name}] -- [$value]")
                     })
 
-                    dataRowBuilder.addColumn(prop.name, prop.value)
+                    dataRowBuilder.addColumn(prop.name, prop.value.map(_.toString))
                 })
                 log.info(s"Fetched child pages [${result.childPages}]")
                 result.childPages.foreach(p => {
@@ -94,19 +96,27 @@ object FetcherService extends Serializable with Log {
         currentPage.props.values.foreach(p => fetchProperty(p, dom))
     }
 
-    private def fetchProperty(prop: Prop, dom: Jerry): Unit = {
+    private def fetchProperty[T](prop: Prop[T], dom: Jerry)(implicit tag: WeakTypeTag[T]): Unit = {
+        val targs = tag.tpe match { case TypeRef(_, _, args) => args }
+        println(targs)
+
         prop.reset()
+        var raw: Set[String] = Set.empty[String]
         dom.$(prop.css).each(new JerryNodeFunction {
             override def onNode(node: Node, index: Int): Boolean = {
                 val value = prop.kind match {
                     case PropType.Link => node.getAttribute("href")
                     case _ => node.getTextContent
                 }
-                val propValue: String = value.replaceAll( """\s{2,}""", " ").replaceAll( """^\s|\s$""", "")
-                prop.value += propValue
+
+//                val propValue: String = value.replaceAll( """\s{2,}""", " ").replaceAll( """^\s|\s$""", "")
+//                prop.value += propValue
+                    raw += value
                 true
             }
         })
+
+        ParserLike.parse2(prop, raw)
     }
 }
 

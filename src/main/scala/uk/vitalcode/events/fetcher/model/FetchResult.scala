@@ -1,3 +1,5 @@
 package uk.vitalcode.events.fetcher.model
 
-case class FetchResult(page: Page, childPages: Seq[Page]) extends Serializable
+import shapeless.HList
+
+case class FetchResult(page: Page[HList], childPages: Seq[Page[HList]]) extends Serializable

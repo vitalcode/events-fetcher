@@ -1,17 +1,19 @@
 package uk.vitalcode.events.fetcher.parser
 
-import uk.vitalcode.events.fetcher.model.{PropType, Prop}
+import java.time.LocalDateTime
 
-object PropertyParser {
+import shapeless.Poly1
+import uk.vitalcode.events.fetcher.model.Prop
 
-//    def parse[T](prop: Prop, value: String): T = {
-//
-//        if (prop.kind == PropType.Text) {
-//            TextParser.parse(value)
-//        }
-//        TextParser
-//    }
+trait PropertyParser[T] {
+    def parse(p: Prop[T]): Prop[T]
 }
 
-//TODO define generic approach
+object PropertyParser extends Poly1 {
+    implicit def propertyString = at[Prop[String]](TextParser.parse)
+
+    implicit def propertyDate = at[Prop[(LocalDateTime, LocalDateTime)]](DateParser.parse)
+}
+
+
 

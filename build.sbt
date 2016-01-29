@@ -19,6 +19,7 @@ libraryDependencies ++= {
     val scalaLoggingV = "3.1.0"
     val scalamockV = "3.2"
     val macwireV = "2.2.2"
+    val shapelessV = "2.2.5"
 
     Seq(
         "org.apache.zookeeper" % "zookeeper" % zooV,
@@ -31,7 +32,6 @@ libraryDependencies ++= {
         "org.apache.hbase" % "hbase-hadoop-compat" % hbaseV,
 
         "org.apache.htrace" % "htrace-core" % "3.1.0-incubating",
-        //"io.netty" % "netty" % "3.6.6.Final",
         "com.google.guava" % "guava" % "12.0.1",
         "com.google.protobuf" % "protobuf-java" % "2.5.0",
 
@@ -44,15 +44,16 @@ libraryDependencies ++= {
         "org.jodd" % "jodd-core" % joddV,
         "org.jodd" % "jodd-log" % joddV,
 
-
-    //        "com.typesafe.scala-logging" %% "scala-logging" % scalaLoggingV,
-//
-//        "com.softwaremill.macwire" %% "macros" % macwireV % "provided",
-//        "com.softwaremill.macwire" %% "util" % macwireV,
-//        "com.softwaremill.macwire" %% "proxy" % macwireV,
+        "com.chuusai" %% "shapeless" % shapelessV,
 
         "org.scalatest" %% "scalatest" % scalaTestV % "test",
         "org.scalamock" %% "scalamock-scalatest-support" % scalamockV % "test"
+
+        // "com.typesafe.scala-logging" %% "scala-logging" % scalaLoggingV,
+        //
+        // "com.softwaremill.macwire" %% "macros" % macwireV % "provided",
+        // "com.softwaremill.macwire" %% "util" % macwireV,
+        // "com.softwaremill.macwire" %% "proxy" % macwireV,
     )
 }
 
