@@ -19,6 +19,7 @@ libraryDependencies ++= {
     val scalaLoggingV = "3.1.0"
     val scalamockV = "3.2"
     val macwireV = "2.2.2"
+    val esV = "2.1.1"
 
     Seq(
         "org.apache.zookeeper" % "zookeeper" % zooV,
@@ -44,15 +45,10 @@ libraryDependencies ++= {
         "org.jodd" % "jodd-core" % joddV,
         "org.jodd" % "jodd-log" % joddV,
 
-
-    //        "com.typesafe.scala-logging" %% "scala-logging" % scalaLoggingV,
-//
-//        "com.softwaremill.macwire" %% "macros" % macwireV % "provided",
-//        "com.softwaremill.macwire" %% "util" % macwireV,
-//        "com.softwaremill.macwire" %% "proxy" % macwireV,
-
         "org.scalatest" %% "scalatest" % scalaTestV % "test",
-        "org.scalamock" %% "scalamock-scalatest-support" % scalamockV % "test"
+        "org.scalamock" %% "scalamock-scalatest-support" % scalamockV % "test",
+
+        "org.elasticsearch" % "elasticsearch" % esV
     )
 }
 
