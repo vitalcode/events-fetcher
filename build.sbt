@@ -1,3 +1,5 @@
+import sbtassembly.AssemblyPlugin.autoImport._
+
 name := """events-fetcher"""
 organization := "Vitaliy Kuznetsov & Lesia Mirchenko"
 version := "0.0.1"
@@ -30,31 +32,29 @@ libraryDependencies ++= {
         "org.apache.hbase" % "hbase-common" % hbaseV,
         "org.apache.hbase" % "hbase-protocol" % hbaseV,
         "org.apache.hbase" % "hbase-hadoop-compat" % hbaseV,
-
-        "org.apache.htrace" % "htrace-core" % "3.1.0-incubating",
-        //"io.netty" % "netty" % "3.6.6.Final",
-        "com.google.guava" % "guava" % "12.0.1",
-        "com.google.protobuf" % "protobuf-java" % "2.5.0",
-
         "org.apache.hadoop" % "hadoop-common" % hadoopV excludeAll ExclusionRule(organization = "javax.servlet"),
         "org.apache.hadoop" % "hadoop-client" % hadoopV excludeAll ExclusionRule(organization = "javax.servlet") exclude("com.google.guava", "guava"),
+        "org.apache.spark" %% "spark-core" % sparkV,
+        "org.elasticsearch" %% "elasticsearch-spark" % "2.1.0.Beta4",
 
-        "org.apache.spark" %% "spark-core" % sparkV, // excludeAll ExclusionRule(organization = "org.eclipse.jetty.orbit"), // % "provided",
+        "org.apache.htrace" % "htrace-core" % "3.1.0-incubating",
+        "com.google.guava" % "guava" % "12.0.1",
+        "com.google.protobuf" % "protobuf-java" % "2.5.0",
 
         "org.jodd" % "jodd-lagarto" % joddV,
         "org.jodd" % "jodd-core" % joddV,
         "org.jodd" % "jodd-log" % joddV,
 
         "org.scalatest" %% "scalatest" % scalaTestV % "test",
-        "org.scalamock" %% "scalamock-scalatest-support" % scalamockV % "test",
-
-        "org.elasticsearch" % "elasticsearch" % esV
+        "org.scalamock" %% "scalamock-scalatest-support" % scalamockV % "test"
     )
 }
 
-mergeStrategy in assembly := {
+assemblyMergeStrategy in assembly := {
     case m if m.toLowerCase.endsWith("manifest.mf") => MergeStrategy.discard
     case m if m.toLowerCase.matches("meta-inf.*\\.sf$") => MergeStrategy.discard
     case "META-INF/jersey-module-version" => MergeStrategy.first
     case _ => MergeStrategy.first
 }
+
+parallelExecution in Test := false

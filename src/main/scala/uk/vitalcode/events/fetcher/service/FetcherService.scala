@@ -10,10 +10,18 @@ import org.apache.hadoop.hbase.mapreduce.TableInputFormat
 import org.apache.hadoop.hbase.util.Bytes
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
+import org.elasticsearch.spark._
 import uk.vitalcode.events.fetcher.common.Log
 import uk.vitalcode.events.fetcher.model._
 
 object FetcherService extends Serializable with Log {
+
+    def fetchPages(pages: Set[Page], sc: SparkContext, hBaseConf: Configuration, myEsIndex: String, myEsType: String) = {
+        pages.foreach(page => {
+            val table: DataTable = fetchPage(page, sc, hBaseConf)
+            sc.makeRDD(table.dataRows.map(t => (t.rowId, t.columns)).toSeq).saveToEsWithMeta(s"$myEsIndex/$myEsType")
+        })
+    }
 
     def fetchPage(page: Page, sc: SparkContext, hBaseConf: Configuration): DataTable = {
 

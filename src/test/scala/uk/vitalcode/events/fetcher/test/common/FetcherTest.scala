@@ -1,14 +1,14 @@
-package uk.vitalcode.events.fetcher.test
+package uk.vitalcode.events.fetcher.test.common
 
 import java.io.InputStream
 
 import org.apache.commons.codec.digest.DigestUtils
 import org.apache.hadoop.conf.Configuration
-import org.apache.hadoop.hbase.mapreduce.TableInputFormat
 import org.apache.hadoop.hbase._
 import org.apache.hadoop.hbase.client._
+import org.apache.hadoop.hbase.mapreduce.TableInputFormat
 import org.apache.hadoop.hbase.util.Bytes
-import org.apache.spark.{SparkContext, SparkConf}
+import org.apache.spark.{SparkConf, SparkContext}
 import org.scalatest._
 import uk.vitalcode.events.fetcher.common.Log
 import uk.vitalcode.events.fetcher.model.MineType._

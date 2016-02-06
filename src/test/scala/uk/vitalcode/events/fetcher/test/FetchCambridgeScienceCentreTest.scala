@@ -2,6 +2,7 @@ package uk.vitalcode.events.fetcher.test
 
 import uk.vitalcode.events.fetcher.model.{MineType, _}
 import uk.vitalcode.events.fetcher.service.FetcherService
+import uk.vitalcode.events.fetcher.test.common.FetcherTest
 
 
 class FetchCambridgeScienceCentreTest extends FetcherTest {
@@ -201,4 +202,3 @@ class FetchCambridgeScienceCentreTest extends FetcherTest {
     }
 }
 
-// TODO unique test table names, thus test could run concurrently
