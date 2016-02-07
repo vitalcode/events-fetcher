@@ -1,5 +1,7 @@
 package uk.vitalcode.events.fetcher.service
 
+import java.net.URI
+
 import jodd.jerry.Jerry._
 import jodd.jerry.{Jerry, JerryNodeFunction}
 import jodd.lagarto.dom.Node
@@ -78,8 +80,12 @@ object FetcherService extends Serializable with Log {
                     if (childPages.link != null) {
                         dom.$(childPages.link).each(new JerryNodeFunction {
                             override def onNode(node: Node, index: Int): Boolean = {
-                                val childPageUrl = node.getAttribute("href")
-                                val childPage: Page = Page(nextPages.id, nextPages.ref, childPageUrl, nextPages.link, nextPages.props, nextPages.pages, nextPages.parent, nextPages.isRow)
+                                val baseUri = new URI(page.url)
+                                val childLinkUrl = node.getAttribute("href")
+                                val childImageUrl = node.getAttribute("src")
+                                val childUri = if (childLinkUrl != null) new URI(childLinkUrl) else new URI(childImageUrl)
+                                val resolvedUri = baseUri.resolve(childUri).toString
+                                val childPage: Page = Page(nextPages.id, nextPages.ref, resolvedUri, nextPages.link, nextPages.props, nextPages.pages, nextPages.parent, nextPages.isRow)
                                 derivedPages += childPage
                                 true
                             }
