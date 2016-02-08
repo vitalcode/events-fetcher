@@ -4,7 +4,7 @@ import uk.vitalcode.events.fetcher.model.PropType.PropType
 
 object PropType extends Enumeration with Serializable {
     type PropType = Value
-    val Text, Date = Value
+    val Text, Date, Image = Value
 }
 
 case class Prop(name: String, css: String, kind: PropType, values: Set[String]) extends Serializable

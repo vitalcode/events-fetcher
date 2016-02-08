@@ -105,19 +105,21 @@ object FetcherService extends Serializable with Log {
     }
 
     private def fetchPageProperties(currentPage: Page, dom: Jerry): Unit = {
-        currentPage.props = currentPage.props.map(p => fetchProperty(p, dom))
-    }
-
-    private def fetchProperty(prop: Prop, dom: Jerry): Prop = {
-        var propReset = prop.copy(values = Set.empty[String])
-        dom.$(propReset.css).each(new JerryNodeFunction {
-            override def onNode(node: Node, index: Int): Boolean = {
-                val value = node.getTextContent.replaceAll( """\s{2,}""", " ").replaceAll( """^\s|\s$""", "")
-                propReset = propReset.copy(values = propReset.values + value)
-                true
+        currentPage.props = currentPage.props.map(prop => {
+            var propReset = prop.copy(values = Set.empty[String])
+            if (propReset.css != null) {
+                dom.$(propReset.css).each(new JerryNodeFunction {
+                    override def onNode(node: Node, index: Int): Boolean = {
+                        val value = node.getTextContent.replaceAll( """\s{2,}""", " ").replaceAll( """^\s|\s$""", "")
+                        propReset = propReset.copy(values = propReset.values + value)
+                        true
+                    }
+                })
+            } else {
+                propReset = propReset.copy(values = propReset.values + currentPage.url)
             }
+            propReset
         })
-        propReset
     }
 }
 

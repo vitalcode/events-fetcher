@@ -4,7 +4,7 @@ import java.time.format.DateTimeFormatter
 
 import uk.vitalcode.events.fetcher.model.Prop
 import uk.vitalcode.events.fetcher.model.PropType._
-import uk.vitalcode.events.fetcher.parser.{DateParser, TextParser}
+import uk.vitalcode.events.fetcher.parser.{ImageParser, DateParser, TextParser}
 
 object PropertyService {
 
@@ -14,8 +14,8 @@ object PropertyService {
             case Date =>
                 val formatter: DateTimeFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy")
                 DateParser.parse(prop).map(d => d.format(formatter))
+            case Image => ImageParser.parse(prop)
             case _ => ???
         }
     }
 }
-
