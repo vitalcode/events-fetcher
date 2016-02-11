@@ -10,7 +10,7 @@ class FetchCambridgeScienceCentreTest extends FetcherTest {
     "A Fetcher" when {
         "fetching data from Cambridge science centre web site" when {
             "building event record from both event list and event description pages" should {
-                "should fetch all expected property values" in {
+                "fetch all expected property values" in {
                     putTestData()
                     val page = buildTestPageList()
                     val actual = FetcherService.fetchPage(page, sc, hBaseConf)
@@ -19,7 +19,7 @@ class FetchCambridgeScienceCentreTest extends FetcherTest {
             }
 
             "building event record from description event pages only" should {
-                "should fetch all expected property values" in {
+                "fetch all expected property values" in {
                     val page = buildTestPageDescription()
                     val actual = FetcherService.fetchPage(page, sc, hBaseConf)
                     actual should equal(buildExpectedFetchedDataDescription())
@@ -30,7 +30,7 @@ class FetchCambridgeScienceCentreTest extends FetcherTest {
 
     override protected def putTestData(): Unit = {
         // page 1 list
-        putTestDataRow("http://www.cambridgesciencecentre.org/whats-on/list",
+        putTestDataRow("http://www.cambridgesciencecentre.org/whats-on/list/",
             "/clientCambridgeScienceCentreTest/list1.html", MineType.TEXT_HTML)
         // page 1 link 1
         putTestDataRow("http://www.cambridgesciencecentre.org/whats-on/events/destination-space-crew-09012016-1500/",
@@ -83,7 +83,7 @@ class FetchCambridgeScienceCentreTest extends FetcherTest {
     private def buildTestPageList(): Page = {
         PageBuilder()
             .setId("list")
-            .setUrl("http://www.cambridgesciencecentre.org/whats-on/list")
+            .setUrl("http://www.cambridgesciencecentre.org/whats-on/list/")
             .isRow(true)
             .addProp(PropBuilder()
                 .setName("title")
@@ -122,7 +122,7 @@ class FetchCambridgeScienceCentreTest extends FetcherTest {
 
     private def buildExpectedFetchedDataList(): DataTable = {
         DataTableBuilder()
-            .addRow(DataRowBuilder().setRowId("http://www.cambridgesciencecentre.org/whats-on/list")
+            .addRow(DataRowBuilder().setRowId("http://www.cambridgesciencecentre.org/whats-on/list/")
                 .addColumn("title", "Destination Space: Join the crew!", "Explore Your Universe: Star Light, Star Bright")
                 .addColumn("description",
                     "Destination Space! Tim Peake, the first British European Space Agency astronaut, is heading into space in December. Join us to explore his mission to the ISS. From launching a rocket to experiencing life in microgravity, this show is full of amazing demonstrations. An out of this world show not to be missed!",
@@ -163,7 +163,7 @@ class FetchCambridgeScienceCentreTest extends FetcherTest {
     private def buildTestPageDescription(): Page = {
         PageBuilder()
             .setId("list")
-            .setUrl("http://www.cambridgesciencecentre.org/whats-on/list")
+            .setUrl("http://www.cambridgesciencecentre.org/whats-on/list/")
             .addPage(PageBuilder()
                 .isRow(true)
                 .setId("description")

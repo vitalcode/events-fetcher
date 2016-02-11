@@ -18,7 +18,7 @@ trait FetcherTest extends WordSpec with ShouldMatchers with BeforeAndAfterEach w
     var sc: SparkContext = _
     var hBaseConn: Connection = _
     var hBaseConf: Configuration = _
-    val testTable: TableName = TableName.valueOf("testTable")
+    val testTable: TableName = TableName.valueOf(TestConfig.hbaseTable)
 
     protected def putTestData()
 
@@ -64,12 +64,13 @@ trait FetcherTest extends WordSpec with ShouldMatchers with BeforeAndAfterEach w
     }
 
     override protected def beforeEach(): Unit = {
-        val sparkConf: SparkConf = new SparkConf().setAppName("events-fetcher-test")
-            .setMaster("local[1]")
+        val sparkConf: SparkConf = new SparkConf()
+            .setAppName(TestConfig.sparkApp)
+            .setMaster(TestConfig.sparkMaster)
         sc = new SparkContext(sparkConf)
 
         hBaseConf = HBaseConfiguration.create()
-        hBaseConf.set(HConstants.ZOOKEEPER_QUORUM, "localhost")
+        hBaseConf.set(HConstants.ZOOKEEPER_QUORUM, TestConfig.hbaseZookeeperQuorum)
         hBaseConf.set(TableInputFormat.INPUT_TABLE, Bytes.toString(testTable.getName))
         hBaseConn = ConnectionFactory.createConnection(hBaseConf)
 

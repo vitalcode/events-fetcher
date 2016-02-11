@@ -3,16 +3,16 @@ package uk.vitalcode.events.fetcher.test
 import org.elasticsearch.spark._
 import uk.vitalcode.events.fetcher.model._
 import uk.vitalcode.events.fetcher.service.{EsQueryService, FetcherService}
-import uk.vitalcode.events.fetcher.test.common.FetcherTest
+import uk.vitalcode.events.fetcher.test.common.{TestConfig, FetcherTest}
 
 class FetchAndIndexTest extends FetcherTest {
 
     "A Fetcher" when {
         "fetching data from Cambridge science centre web site" when {
             "building event record from description event pages only" should {
-                "should fetch all expected property values" in {
-                    val testIndex = "test_index"
-                    val testType = "test_type"
+                "fetch all expected property values" in {
+                    val testIndex = TestConfig.elasticIndex
+                    val testType = TestConfig.elasticType
                     val resource = s"$testIndex/$testType"
                     val pages = Set[Page](buildTestPageDescription())
 
@@ -28,7 +28,7 @@ class FetchAndIndexTest extends FetcherTest {
 
     override protected def putTestData(): Unit = {
         // page 1 list
-        putTestDataRow("http://www.cambridgesciencecentre.org/whats-on/list",
+        putTestDataRow("http://www.cambridgesciencecentre.org/whats-on/list/",
             "/clientCambridgeScienceCentreTest/list1.html", MineType.TEXT_HTML)
         // page 1 link 1
         putTestDataRow("http://www.cambridgesciencecentre.org/whats-on/events/destination-space-crew-09012016-1500/",
@@ -79,7 +79,7 @@ class FetchAndIndexTest extends FetcherTest {
     private def buildTestPageDescription(): Page = {
         PageBuilder()
             .setId("list")
-            .setUrl("http://www.cambridgesciencecentre.org/whats-on/list")
+            .setUrl("http://www.cambridgesciencecentre.org/whats-on/list/")
             .addPage(PageBuilder()
                 .isRow(true)
                 .setId("description")

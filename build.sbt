@@ -22,6 +22,7 @@ libraryDependencies ++= {
     val scalamockV = "3.2"
     val macwireV = "2.2.2"
     val esV = "2.1.1"
+    val configV = "1.3.0"
 
     Seq(
         "org.apache.zookeeper" % "zookeeper" % zooV,
@@ -45,12 +46,15 @@ libraryDependencies ++= {
         "org.jodd" % "jodd-core" % joddV,
         "org.jodd" % "jodd-log" % joddV,
 
+        "com.typesafe" % "config" % configV,
+
         "org.scalatest" %% "scalatest" % scalaTestV % "test",
         "org.scalamock" %% "scalamock-scalatest-support" % scalamockV % "test"
     )
 }
 
 assemblyMergeStrategy in assembly := {
+    case PathList("reference.conf") => MergeStrategy.concat
     case m if m.toLowerCase.endsWith("manifest.mf") => MergeStrategy.discard
     case m if m.toLowerCase.matches("meta-inf.*\\.sf$") => MergeStrategy.discard
     case "META-INF/jersey-module-version" => MergeStrategy.first
@@ -58,3 +62,5 @@ assemblyMergeStrategy in assembly := {
 }
 
 parallelExecution in Test := false
+assemblyJarName in assembly := "fetcher.jar"
+mainClass in assembly := Some("uk.vitalcode.events.fetcher.Client")
