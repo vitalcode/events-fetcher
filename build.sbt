@@ -23,10 +23,10 @@ libraryDependencies ++= {
     val macwireV = "2.2.2"
     val esV = "2.1.1"
     val configV = "1.3.0"
+    val scalaHttpV = "2.2.1"
 
     Seq(
-        "org.apache.zookeeper" % "zookeeper" % zooV,
-
+        "org.apache.zookeeper" % "zookeeper" % zooV, //% "provided",
         "org.apache.hbase" % "hbase" % hbaseV,
         "org.apache.hbase" % "hbase-client" % hbaseV,
         "org.apache.hbase" % "hbase-server" % hbaseV excludeAll ExclusionRule(organization = "org.mortbay.jetty"),
@@ -36,6 +36,7 @@ libraryDependencies ++= {
         "org.apache.hadoop" % "hadoop-common" % hadoopV excludeAll ExclusionRule(organization = "javax.servlet"),
         "org.apache.hadoop" % "hadoop-client" % hadoopV excludeAll ExclusionRule(organization = "javax.servlet") exclude("com.google.guava", "guava"),
         "org.apache.spark" %% "spark-core" % sparkV,
+
         "org.elasticsearch" %% "elasticsearch-spark" % "2.1.0.Beta4",
 
         "org.apache.htrace" % "htrace-core" % "3.1.0-incubating",
@@ -45,8 +46,8 @@ libraryDependencies ++= {
         "org.jodd" % "jodd-lagarto" % joddV,
         "org.jodd" % "jodd-core" % joddV,
         "org.jodd" % "jodd-log" % joddV,
-
         "com.typesafe" % "config" % configV,
+        "org.scalaj" %% "scalaj-http" % scalaHttpV,
 
         "org.scalatest" %% "scalatest" % scalaTestV % "test",
         "org.scalamock" %% "scalamock-scalatest-support" % scalamockV % "test"
@@ -64,3 +65,4 @@ assemblyMergeStrategy in assembly := {
 parallelExecution in Test := false
 assemblyJarName in assembly := "fetcher.jar"
 mainClass in assembly := Some("uk.vitalcode.events.fetcher.Client")
+test in assembly := {}

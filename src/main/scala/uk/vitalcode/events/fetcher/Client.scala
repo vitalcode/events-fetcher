@@ -15,6 +15,7 @@ object Client {
         val sparkConf: SparkConf = new SparkConf()
             .setAppName(AppConfig.sparkApp)
             .setMaster(AppConfig.sparkMaster)
+            .set("es.nodes", AppConfig.elasticNodes)
         val sc = new SparkContext(sparkConf)
 
         val hBaseConf: Configuration = HBaseConfiguration.create()

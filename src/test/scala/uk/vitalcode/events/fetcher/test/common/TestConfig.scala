@@ -29,4 +29,8 @@ object TestConfig {
     def elasticType: String = {
         conf.getString("fetcher.elastic.type")
     }
+
+    def elasticNodes: String = {
+        conf.getString("fetcher.elastic.nodes")
+    }
 }

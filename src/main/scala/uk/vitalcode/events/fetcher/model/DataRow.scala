@@ -1,9 +1,11 @@
 package uk.vitalcode.events.fetcher.model
 
+import scala.collection.{mutable, Map}
+
 case class DataRow(rowId: String, columns: Map[String, Set[String]]) extends Serializable
 
 case class DataRowBuilder() extends Builder {
-    private var columns: Map[String, Set[String]] = Map.empty[String, Set[String]]
+    private var columns: Map[String, Set[String]] = mutable.LinkedHashMap[String, Set[String]]()
     private var row: String = _
 
     def setRowId(row: String): DataRowBuilder = {
