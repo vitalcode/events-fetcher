@@ -65,4 +65,4 @@ assemblyMergeStrategy in assembly := {
 parallelExecution in Test := false
 assemblyJarName in assembly := "fetcher.jar"
 mainClass in assembly := Some("uk.vitalcode.events.fetcher.Client")
-test in assembly := {}
+

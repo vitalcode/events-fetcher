@@ -1,5 +1,8 @@
 package uk.vitalcode.events.fetcher.model
 
+import java.text.SimpleDateFormat
+import java.util.Date
+
 import scala.collection.JavaConversions.JListWrapper
 import scala.collection.Map
 
@@ -21,13 +24,14 @@ case class DataTable(dataRows: Set[DataRow]) extends Serializable {
 }
 
 case class DataTableBuilder() extends Serializable with Builder {
+    private val dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss")
     private var dataRows: Set[DataRow] = Set.empty[DataRow]
 
     def addArray(array: Array[(String, Map[String, AnyRef])]): DataTableBuilder = {
-//        this.dataRows = array.map(r => DataRow(r._1, r._2.asInstanceOf[Map[String, Set[String]]])).toSet
-
-        this.dataRows = array.map(r => DataRow(r._1, r._2.map(c => (c._1, c._2.asInstanceOf[JListWrapper[String]].toSet)))).toSet
-
+        this.dataRows = array.map(r => DataRow(r._1, r._2.map(c => c._1 match {
+            case "from" | "to" => (c._1, c._2.asInstanceOf[JListWrapper[Date]].map(m => dateFormat.format(m)).toSet)
+            case _ => (c._1, c._2.asInstanceOf[JListWrapper[String]].toSet)
+        }))).toSet
         this
     }
 

@@ -34,8 +34,7 @@ trait FetcherTest extends WordSpec with ShouldMatchers with BeforeAndAfterEach w
         val actual = DataTableBuilder()
             .addArray(sc.esRDD(esResource).collect())
             .build()
-
-        log.info(actual)
+        log.info(s"From ES [$actual]")
         actual
     }
 
