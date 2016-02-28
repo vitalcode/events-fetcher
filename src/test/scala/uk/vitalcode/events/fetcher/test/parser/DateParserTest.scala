@@ -3,8 +3,8 @@ package uk.vitalcode.events.fetcher.test.parser
 import java.time.{LocalDateTime, Month}
 
 import org.scalatest._
-import uk.vitalcode.events.fetcher.model.{Prop, PropType}
 import uk.vitalcode.events.fetcher.parser.DateParser
+import uk.vitalcode.events.model.{Prop, PropType}
 
 class DateParserTest extends WordSpec with ShouldMatchers {
 
@@ -32,7 +32,7 @@ class DateParserTest extends WordSpec with ShouldMatchers {
 
     private def assertDateParser(dateText: String, expectedFrom: LocalDateTime, expectedTo: LocalDateTime): Unit = {
         val prop = Prop(null, null, PropType.Date, Set[String](dateText))
-        DateParser.parseAsDateTime(prop) shouldBe (expectedFrom, expectedTo)
+        DateParser.parseAsDateTime(prop) shouldBe(expectedFrom, expectedTo)
     }
 
     private def assertDateParser(dateText: String, expectedFrom: LocalDateTime): Unit = {

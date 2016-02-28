@@ -1,6 +1,8 @@
 package uk.vitalcode.events.fetcher.model
 
-import scala.collection.{mutable, Map}
+import uk.vitalcode.events.model.Builder
+
+import scala.collection.{Map, mutable}
 
 case class DataRow(rowId: String, columns: Map[String, Set[String]]) extends Serializable
 

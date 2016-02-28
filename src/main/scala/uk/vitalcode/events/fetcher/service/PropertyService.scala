@@ -1,8 +1,8 @@
 package uk.vitalcode.events.fetcher.service
 
-import uk.vitalcode.events.fetcher.model.Prop
-import uk.vitalcode.events.fetcher.model.PropType._
+import uk.vitalcode.events.model.PropType._
 import uk.vitalcode.events.fetcher.parser.{DateParser, ImageParser, TextParser}
+import uk.vitalcode.events.model.Prop
 
 object PropertyService {
 

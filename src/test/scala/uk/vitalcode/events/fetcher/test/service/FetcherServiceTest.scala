@@ -1,8 +1,10 @@
 package uk.vitalcode.events.fetcher.test.service
 
-import uk.vitalcode.events.fetcher.model._
+import uk.vitalcode.events.cambridge
+import uk.vitalcode.events.fetcher.model.{DataRowBuilder, DataTable, DataTableBuilder}
 import uk.vitalcode.events.fetcher.service.FetcherService
 import uk.vitalcode.events.fetcher.test.common.FetcherTest
+import uk.vitalcode.events.model._
 
 
 class FetcherServiceTest extends FetcherTest {
@@ -11,7 +13,7 @@ class FetcherServiceTest extends FetcherTest {
         "fetching data from Cambridge science centre web site" when {
             "building event record from description event pages only" should {
                 "fetch all expected property values" in {
-                    FetcherService.fetchPages(Set[Page](buildPageDescription()), sc, hBaseConf, esIndex, esType)
+                    FetcherService.fetchPages(Set[Page](cambridge.Pages.cambridgeScienceCentre), sc, hBaseConf, esIndex, esType)
                     val actual = esData()
                     val expected = expectedEsDataDescription()
                     actual shouldBe expected
@@ -83,47 +85,6 @@ class FetcherServiceTest extends FetcherTest {
         putTestDataRow("http://www.cambridgesciencecentre.org/media/assets/3a/fb2024b1db936348b42d3edd48995c32f69a1d.jpg",
             "/clientCambridgeScienceCentreTest/destination-space-crew-09012016-1500.jpg", MineType.IMAGE_JPEG,
             "http://www.cambridgesciencecentre.org/whats-on/events/electric-universe/", "image")
-    }
-
-    private def buildPageDescription(): Page = {
-        PageBuilder()
-            .setId("list")
-            .setUrl("http://www.cambridgesciencecentre.org/whats-on/list/")
-            .addPage(PageBuilder()
-                .isRow(true)
-                .setId("description")
-                .setLink("div.main_wrapper > section > article > ul > li > h2 > a")
-                .addPage(PageBuilder()
-                    .setId("image")
-                    .setLink("section.event_detail > div.page_content > article > img")
-                    .addProp(PropBuilder()
-                        .setName("image")
-                        .setKind(PropType.Image)
-                    )
-                )
-                .addProp(PropBuilder()
-                    .setName("description")
-                    .setCss("div.main_wrapper > section.event_detail > div.page_content p:nth-child(4)")
-                    .setKind(PropType.Text)
-                )
-                .addProp(PropBuilder()
-                    .setName("cost")
-                    .setCss("div.main_wrapper > section.event_detail > div.page_content p:nth-child(5)")
-                    .setKind(PropType.Text)
-                )
-                .addProp(PropBuilder()
-                    .setName("when")
-                    .setCss("div.main_wrapper > section.event_detail > div > span:nth-child(2)")
-                    .setKind(PropType.Date)
-
-                )
-            )
-            .addPage(PageBuilder()
-                .setRef("list")
-                .setId("pagination")
-                .setLink("div.pagination > div.omega > a")
-            )
-            .build()
     }
 
     private def expectedEsDataDescription(): DataTable = {

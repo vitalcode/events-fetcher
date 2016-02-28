@@ -1,12 +1,12 @@
 package uk.vitalcode.events.fetcher.parser
 
 import java.text.DateFormatSymbols
+import java.time.format.{DateTimeFormatter, DateTimeFormatterBuilder, SignStyle}
 import java.time.temporal.ChronoField._
-import java.time.{LocalTime, LocalDateTime}
-import java.time.format.{SignStyle, ResolverStyle, DateTimeFormatterBuilder, DateTimeFormatter}
+import java.time.{LocalDateTime, LocalTime}
 import java.util.Locale
 
-import uk.vitalcode.events.fetcher.model.Prop
+import uk.vitalcode.events.model.Prop
 
 object DateParser extends ParserLike[String] {
 

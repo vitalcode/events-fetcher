@@ -2,7 +2,6 @@ package uk.vitalcode.events.fetcher.test.common
 
 import java.io.InputStream
 
-import org.elasticsearch.spark._
 import org.apache.commons.codec.digest.DigestUtils
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.hbase._
@@ -10,11 +9,13 @@ import org.apache.hadoop.hbase.client._
 import org.apache.hadoop.hbase.mapreduce.TableInputFormat
 import org.apache.hadoop.hbase.util.Bytes
 import org.apache.spark.{SparkConf, SparkContext}
+import org.elasticsearch.spark._
 import org.scalatest._
-import scalaj.http.Http
 import uk.vitalcode.events.fetcher.common.Log
-import uk.vitalcode.events.fetcher.model.{DataTableBuilder, DataTable}
-import uk.vitalcode.events.fetcher.model.MineType._
+import uk.vitalcode.events.fetcher.model.{DataTable, DataTableBuilder}
+import uk.vitalcode.events.model.MineType.MineType
+
+import scalaj.http.Http
 
 trait FetcherTest extends WordSpec with ShouldMatchers with BeforeAndAfterEach with Log {
 

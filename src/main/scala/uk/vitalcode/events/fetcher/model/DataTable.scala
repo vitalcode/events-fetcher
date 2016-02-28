@@ -3,6 +3,8 @@ package uk.vitalcode.events.fetcher.model
 import java.text.SimpleDateFormat
 import java.util.Date
 
+import uk.vitalcode.events.model.Builder
+
 import scala.collection.JavaConversions.JListWrapper
 import scala.collection.Map
 

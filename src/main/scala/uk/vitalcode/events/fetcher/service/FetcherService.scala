@@ -13,7 +13,7 @@ import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
 import org.elasticsearch.spark._
 import uk.vitalcode.events.fetcher.common.Log
-import uk.vitalcode.events.fetcher.model._
+import uk.vitalcode.events.model.{Page, Prop, PropType}
 
 
 object FetcherService extends Serializable with Log {
