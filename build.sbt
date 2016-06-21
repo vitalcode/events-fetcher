@@ -24,6 +24,7 @@ libraryDependencies ++= {
     val esV = "2.1.1"
     val configV = "1.3.0"
     val scalaHttpV = "2.2.1"
+    val eventsModelV = "0.0.1"
 
     Seq(
         "org.apache.zookeeper" % "zookeeper" % zooV, //% "provided",
@@ -50,7 +51,9 @@ libraryDependencies ++= {
         "org.scalaj" %% "scalaj-http" % scalaHttpV,
 
         "org.scalatest" %% "scalatest" % scalaTestV % "test",
-        "org.scalamock" %% "scalamock-scalatest-support" % scalamockV % "test"
+        "org.scalamock" %% "scalamock-scalatest-support" % scalamockV % "test",
+
+        "vitalcode" %% "events-model" % eventsModelV
     )
 }
 
