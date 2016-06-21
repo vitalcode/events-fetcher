@@ -5,7 +5,7 @@ organization := "Vitaliy Kuznetsov & Lesia Mirchenko"
 version := "0.0.1"
 scalaVersion := "2.10.6"
 
-dockerBaseImage := "dockerfile/java:oracle-java8"
+//dockerBaseImage := "dockerfile/java:oracle-java8"
 
 resolvers ++= Seq(
     "Hadoop Releases" at "https://repository.cloudera.com/content/repositories/releases/",
@@ -58,6 +58,8 @@ libraryDependencies ++= {
         "vitalcode" %% "events-model" % eventsModelV
     )
 }
+
+enablePlugins(JavaAppPackaging)
 
 assemblyMergeStrategy in assembly := {
     case PathList("reference.conf") => MergeStrategy.concat
