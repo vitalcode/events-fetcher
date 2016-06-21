@@ -5,6 +5,8 @@ organization := "Vitaliy Kuznetsov & Lesia Mirchenko"
 version := "0.0.1"
 scalaVersion := "2.10.6"
 
+dockerBaseImage := "dockerfile/java:oracle-java8"
+
 resolvers ++= Seq(
     "Hadoop Releases" at "https://repository.cloudera.com/content/repositories/releases/",
     "Cloudera" at "https://repository.cloudera.com/artifactory/public/"
