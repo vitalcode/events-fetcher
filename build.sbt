@@ -29,16 +29,16 @@ libraryDependencies ++= {
     val eventsModelV = "0.0.1"
 
     Seq(
-        "org.apache.zookeeper" % "zookeeper" % zooV, //% "provided",
-        "org.apache.hbase" % "hbase" % hbaseV,
-        "org.apache.hbase" % "hbase-client" % hbaseV,
-        "org.apache.hbase" % "hbase-server" % hbaseV excludeAll ExclusionRule(organization = "org.mortbay.jetty"),
-        "org.apache.hbase" % "hbase-common" % hbaseV,
-        "org.apache.hbase" % "hbase-protocol" % hbaseV,
-        "org.apache.hbase" % "hbase-hadoop-compat" % hbaseV,
-        "org.apache.hadoop" % "hadoop-common" % hadoopV excludeAll ExclusionRule(organization = "javax.servlet"),
-        "org.apache.hadoop" % "hadoop-client" % hadoopV excludeAll ExclusionRule(organization = "javax.servlet") exclude("com.google.guava", "guava"),
-        "org.apache.spark" %% "spark-core" % sparkV,
+        "org.apache.zookeeper" % "zookeeper" % zooV % "provided",
+        "org.apache.hbase" % "hbase" % hbaseV % "provided",
+        "org.apache.hbase" % "hbase-client" % hbaseV % "provided",
+        "org.apache.hbase" % "hbase-server" % hbaseV % "provided" excludeAll ExclusionRule(organization = "org.mortbay.jetty"),
+        "org.apache.hbase" % "hbase-common" % hbaseV % "provided",
+        "org.apache.hbase" % "hbase-protocol" % hbaseV % "provided",
+        "org.apache.hbase" % "hbase-hadoop-compat" % hbaseV % "provided",
+        "org.apache.hadoop" % "hadoop-common" % hadoopV % "provided" excludeAll ExclusionRule(organization = "javax.servlet"),
+        "org.apache.hadoop" % "hadoop-client" % hadoopV % "provided" excludeAll ExclusionRule(organization = "javax.servlet") exclude("com.google.guava", "guava"),
+        "org.apache.spark" %% "spark-core" % sparkV % "provided",
 
         "org.elasticsearch" %% "elasticsearch-spark" % "2.1.0.Beta4",
 
