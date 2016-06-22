@@ -49,6 +49,7 @@ libraryDependencies ++= {
         "org.jodd" % "jodd-lagarto" % joddV,
         "org.jodd" % "jodd-core" % joddV,
         "org.jodd" % "jodd-log" % joddV,
+
         "com.typesafe" % "config" % configV,
         "org.scalaj" %% "scalaj-http" % scalaHttpV,
 
@@ -58,8 +59,8 @@ libraryDependencies ++= {
         "vitalcode" %% "events-model" % eventsModelV
     )
 }
-
-enablePlugins(JavaAppPackaging)
+//
+//enablePlugins(JavaAppPackaging)
 
 assemblyMergeStrategy in assembly := {
     case PathList("reference.conf") => MergeStrategy.concat
