@@ -13,7 +13,7 @@ resolvers ++= Seq(
 )
 
 libraryDependencies ++= {
-    val joddV = "3.6.7"
+    val joddV = "3.7"
     val clouderaV = "cdh5.4.7"
     val zooV = s"3.4.5-$clouderaV"
     val hadoopV = s"2.6.0-$clouderaV"
