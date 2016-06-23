@@ -13,7 +13,7 @@ class FetcherServiceTest extends FetcherTest {
         "fetching data from Cambridge science centre web site" when {
             "building event record from description event pages only" should {
                 "fetch all expected property values" in {
-                    FetcherService.fetchPages(Set[Page](cambridge.Pages.cambridgeScienceCentre), sc, hBaseConf, esIndex, esType)
+                    FetcherService.fetchPages(Set[Page](cambridge.CambridgeScienceCentre.page), sc, hBaseConf, esIndex, esType)
                     val actual = esData()
                     val expected = expectedEsDataDescription()
                     actual shouldBe expected
