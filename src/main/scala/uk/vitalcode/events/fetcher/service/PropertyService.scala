@@ -3,10 +3,12 @@ package uk.vitalcode.events.fetcher.service
 import uk.vitalcode.events.model.PropType._
 import uk.vitalcode.events.fetcher.parser.{DateParser, ImageParser, TextParser}
 import uk.vitalcode.events.model.Prop
+import uk.vitalcode.events.fetcher.common.Log
 
-object PropertyService {
+object PropertyService extends Log {
 
     def getFormattedValues(prop: Prop): Vector[(String, String)] = {
+        log.info(s"PropertyService: getFormattedValues prop [$prop]")
         prop.kind match {
             case Text => TextParser.parse(prop).map(p => (prop.name, p)).toVector
             case Date => DateParser.parse(prop).zipWithIndex
