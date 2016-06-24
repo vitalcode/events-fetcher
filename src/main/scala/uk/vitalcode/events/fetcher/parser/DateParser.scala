@@ -6,9 +6,11 @@ import java.time.temporal.ChronoField._
 import java.time.{LocalDateTime, LocalTime}
 import java.util.Locale
 
+import uk.vitalcode.events.fetcher.common.Log
+import uk.vitalcode.events.fetcher.service.PropertyService._
 import uk.vitalcode.events.model.Prop
 
-object DateParser extends ParserLike[String] {
+object DateParser extends ParserLike[String] with Log {
 
     // Split on white space or "-" (range character, including "-" as return token, but not before AM/PM)
     val splitRegEx =
@@ -23,10 +25,7 @@ object DateParser extends ParserLike[String] {
 
     def parseAsDateTime(prop: Prop): (LocalDateTime, LocalDateTime) = {
 
-
-        val ff = splitRegEx.split(prop.values.reduce((a, b) => a.concat(b.concat(" "))))
-
-        val tokens = splitRegEx.split(prop.values.reduce((a, b) => a.concat(b.concat(" "))))
+        val tokens = splitRegEx.split(prop.values.mkString(" "))
             .flatMap(t => {
                 DateTokenFactory.create(t)
             })
@@ -54,7 +53,12 @@ object DateParser extends ParserLike[String] {
 
         dates.size match {
             case 1 => analyseOneDatePattern(dates, times)
-            case _ => ???
+            case _ => {
+                log.info(s"Not implemented info: date tokens [${tokens.size}] [${tokens.mkString(",")}]")
+                log.info(s"Not implemented info: date dates [${dates.size}] [${dates}]")
+                log.info(s"Not implemented info: date times [${times.size}] [${times}]")
+                ???
+            }
         }
     }
 
