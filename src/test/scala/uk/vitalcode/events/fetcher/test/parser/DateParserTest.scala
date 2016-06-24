@@ -28,6 +28,19 @@ class DateParserTest extends WordSpec with ShouldMatchers {
 
             // TODO + to time nex day "Sunday, March 20th 2016 from 10:00 PM to 5:00 AM" ???
         }
+        "parsing dates from Cambridge Junction" should {
+            "parse week month date no year + from | to time" in {
+                val year = LocalDateTime.now().getYear
+                assertDateParser("Fri 24 Jun          6:45pm (doors) | 11pm (curfew) ",
+                    LocalDateTime.of(year, Month.JUNE, 24, 18, 45),
+                    LocalDateTime.of(year, Month.JUNE, 24, 23, 0))
+            }
+            "parse week month date no year + from" in {
+                val year = LocalDateTime.now().getYear
+                assertDateParser("Date:Fri 08 Jul, Time:8pm",
+                    LocalDateTime.of(year, Month.JULY, 8, 20, 0))
+            }
+        }
     }
 
     private def assertDateParser(dateText: String, expectedFrom: LocalDateTime, expectedTo: LocalDateTime): Unit = {

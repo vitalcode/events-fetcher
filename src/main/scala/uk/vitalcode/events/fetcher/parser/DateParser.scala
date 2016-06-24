@@ -12,7 +12,7 @@ object DateParser extends ParserLike[String] {
 
     // Split on white space or "-" (range character, including "-" as return token, but not before AM/PM)
     val splitRegEx =
-        """(?<![-])[\s]+(?![-]|PM|pm|AM|am)|(?=[-])|(?<=[-])""".r
+        """(?<![-])[\s]+(?![-]|PM|pm|AM|am)|(?=[-,])|(?<=[-,])""".r
 
     val dateFormatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME
 
@@ -22,16 +22,25 @@ object DateParser extends ParserLike[String] {
     }
 
     def parseAsDateTime(prop: Prop): (LocalDateTime, LocalDateTime) = {
+
+
+        val ff = splitRegEx.split(prop.values.reduce((a, b) => a.concat(b.concat(" "))))
+
         val tokens = splitRegEx.split(prop.values.reduce((a, b) => a.concat(b.concat(" "))))
-            .flatMap(t => DateTokenFactory.create(t))
+            .flatMap(t => {
+                DateTokenFactory.create(t)
+            })
 
         val dates: Vector[LocalDateTime] = tokens.grouped(3)
             .flatMap(g => {
                 val year = g.find(ty => ty.isInstanceOf[YearToken])
                 val month = g.filter(tm => tm.isInstanceOf[MonthToken]).map(ty => ty.asInstanceOf[MonthToken]).headOption
                 val dayOfMonth = g.find(ty => ty.isInstanceOf[DayOfMonthToken])
-                if (year.nonEmpty && month.nonEmpty && dayOfMonth.nonEmpty) {
-                    Vector(DateToken(LocalDateTime.of(year.get.token.toInt, month.get.getMonth, dayOfMonth.get.token.toInt, 0, 0)))
+                if (month.nonEmpty && dayOfMonth.nonEmpty) {
+                    Vector(DateToken(LocalDateTime.of(
+                        if (year.isEmpty) LocalDateTime.now().getYear else year.get.token.toInt,
+                        month.get.getMonth,
+                        dayOfMonth.get.token.toInt, 0, 0)))
                 } else g
             })
             .filter(d => d.isInstanceOf[DateToken])
@@ -75,7 +84,8 @@ object DateTokenFactory {
     // Non-Matches: 19:31 AM | 9:9 PM | 25:60:61
     // From: http://regexlib.com/REDetails.aspx?regexp_id=144
     private val timeRegEx =
-        """^((([0]?[1-9]|1[0-2])(:|\.)[0-5][0-9]((:|\.)[0-5][0-9])?( )?(AM|am|aM|Am|PM|pm|pM|Pm))|(([0]?[0-9]|1[0-9]|2[0-3])(:|\.)[0-5][0-9]((:|\.)[0-5][0-9])?))$""".r
+        """((([0]?[1-9]|1[0-2])((:|\.)[0-5][0-9])?((:|\.)[0-5][0-9])?( )?(AM|am|aM|Am|PM|pm|pM|Pm))|(([0]?[0-9]|1[0-9]|2[0-3])(:|\.)[0-5][0-9]((:|\.)[0-5][0-9])?))""".r
+        //"""^((([0]?[1-9]|1[0-2])(:|\.)[0-5][0-9]((:|\.)[0-5][0-9])?( )?(AM|am|aM|Am|PM|pm|pM|Pm))|(([0]?[0-9]|1[0-9]|2[0-3])(:|\.)[0-5][0-9]((:|\.)[0-5][0-9])?))$""".r
 
     // Matches year in interval 1900-2099
     // From: http://stackoverflow.com/questions/4374185/regular-expression-match-to-test-for-a-valid-year
@@ -88,13 +98,14 @@ object DateTokenFactory {
 
     def create(token: String): Option[DateTokenLike] = {
         val time = timeRegEx.findFirstIn(token)
-        if (time.nonEmpty) Some(TimeToken(time.get))
+        if (time.nonEmpty) Some(TimeToken(time.get.replaceAll("\\s", "").toUpperCase()))
         else {
             val year = yearRegEx.findFirstIn(token)
             if (year.nonEmpty) Some(YearToken(year.get))
             else {
-                val month = monthRegEx.findFirstIn(token)
-                if (month.nonEmpty) Some(MonthToken(month.get))
+                var month = new DateFormatSymbols(Locale.UK).getMonths.map(m => m.toLowerCase()).indexOf(token.toLowerCase()) //monthRegEx.findFirstIn(token)
+                month  = if (month != -1) month else new DateFormatSymbols(Locale.UK).getShortMonths.map(m => m.toLowerCase()).indexOf(token.toLowerCase())
+                if (month != -1) Some(MonthToken((month + 1).toString))
                 else {
                     val dayOfMonth = dayOfMonthRegEx.findFirstIn(token)
                     if (dayOfMonth.nonEmpty) Some(DayOfMonthToken(dayOfMonth.get))
@@ -114,7 +125,7 @@ case class YearToken(token: String) extends DateTokenLike
 
 case class MonthToken(token: String) extends DateTokenLike {
     def getMonth: Int = {
-        new DateFormatSymbols(Locale.UK).getMonths.indexOf(token) + 1
+        token.toInt
     }
 }
 
@@ -142,6 +153,7 @@ case class TimeToken(token: String) extends DateTokenLike {
 
     private val formatter12H = new DateTimeFormatterBuilder()
         .appendValue(HOUR_OF_AMPM, 1, 2, SignStyle.NEVER)
+        .optionalStart()
         .appendLiteral(':')
         .appendValue(MINUTE_OF_HOUR, 1, 2, SignStyle.NEVER)
         .optionalStart()
@@ -151,9 +163,23 @@ case class TimeToken(token: String) extends DateTokenLike {
         .appendFraction(NANO_OF_SECOND, 0, 9, true)
         .optionalEnd()
         .optionalEnd()
-        .appendLiteral(' ')
+        .optionalEnd()
         .appendText(AMPM_OF_DAY)
         .toFormatter()
+
+//    private val formatter12HhoursOnly = new DateTimeFormatterBuilder()
+//        .appendValue(HOUR_OF_AMPM, 1, 2, SignStyle.NEVER)
+//        .appendLiteral(':')
+//        .appendValue(MINUTE_OF_HOUR, 1, 2, SignStyle.NEVER)
+//        .optionalStart()
+//        .appendLiteral(':')
+//        .appendValue(SECOND_OF_MINUTE, 1, 2, SignStyle.NEVER)
+//        .optionalStart()
+//        .appendFraction(NANO_OF_SECOND, 0, 9, true)
+//        .optionalEnd()
+//        .optionalEnd()
+//        .appendText(AMPM_OF_DAY)
+//        .toFormatter()
 
     private def format24H: Option[LocalTime] = {
         try {

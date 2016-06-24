@@ -8,7 +8,7 @@ import uk.vitalcode.events.fetcher.common.Log
 object PropertyService extends Log {
 
     def getFormattedValues(prop: Prop): Vector[(String, String)] = {
-        log.info(s"PropertyService: getFormattedValues prop [$prop]")
+        log.info(s"Formatting values prop value [$prop]")
         prop.kind match {
             case Text => TextParser.parse(prop).map(p => (prop.name, p)).toVector
             case Date => DateParser.parse(prop).zipWithIndex
