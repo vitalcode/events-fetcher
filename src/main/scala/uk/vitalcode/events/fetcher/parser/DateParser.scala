@@ -10,6 +10,8 @@ import uk.vitalcode.events.fetcher.common.Log
 import uk.vitalcode.events.fetcher.service.PropertyService._
 import uk.vitalcode.events.model.Prop
 
+import scala.util.Try
+
 object DateParser extends ParserLike[String] with Log {
 
     // Split on white space or "-" (range character, including "-" as return token, but not before AM/PM)
@@ -25,12 +27,14 @@ object DateParser extends ParserLike[String] with Log {
 
     def parseAsDateTime(prop: Prop): (LocalDateTime, LocalDateTime) = {
 
-        val tokens = splitRegEx.split(prop.values.mkString(" "))
+        val tokens = splitRegEx.split(prop.values.mkString(" ")).filter(t => !t.isEmpty)
             .flatMap(t => {
                 DateTokenFactory.create(t)
             })
 
-        val dates: Vector[LocalDateTime] = tokens.grouped(3)
+        log.info(s"ParseAsDateTime: date tokens [${tokens.size}] [${tokens.mkString(",")}]")
+
+        val dates: Vector[LocalDateTime] = tokens.grouped(4)
             .flatMap(g => {
                 val year = g.find(ty => ty.isInstanceOf[YearToken])
                 val month = g.filter(tm => tm.isInstanceOf[MonthToken]).map(ty => ty.asInstanceOf[MonthToken]).headOption
@@ -46,17 +50,18 @@ object DateParser extends ParserLike[String] with Log {
             .map(d => d.asInstanceOf[DateToken].dateTime)
             .toVector
 
+        log.info(s"ParseAsDateTime: date dates [${dates.size}] [${dates}]")
+
         val times: Vector[LocalTime] = tokens.flatMap(t => t match {
             case t: TimeToken => Vector(t.time)
             case _ => None
         }).toVector
 
+        log.info(s"ParseAsDateTime: date times [${times.size}] [${times}]")
+
         dates.size match {
             case 1 => analyseOneDatePattern(dates, times)
             case _ => {
-                log.info(s"Not implemented info: date tokens [${tokens.size}] [${tokens.mkString(",")}]")
-                log.info(s"Not implemented info: date dates [${dates.size}] [${dates}]")
-                log.info(s"Not implemented info: date times [${times.size}] [${times}]")
                 ???
             }
         }
@@ -89,7 +94,7 @@ object DateTokenFactory {
     // From: http://regexlib.com/REDetails.aspx?regexp_id=144
     private val timeRegEx =
         """((([0]?[1-9]|1[0-2])((:|\.)[0-5][0-9])?((:|\.)[0-5][0-9])?( )?(AM|am|aM|Am|PM|pm|pM|Pm))|(([0]?[0-9]|1[0-9]|2[0-3])(:|\.)[0-5][0-9]((:|\.)[0-5][0-9])?))""".r
-        //"""^((([0]?[1-9]|1[0-2])(:|\.)[0-5][0-9]((:|\.)[0-5][0-9])?( )?(AM|am|aM|Am|PM|pm|pM|Pm))|(([0]?[0-9]|1[0-9]|2[0-3])(:|\.)[0-5][0-9]((:|\.)[0-5][0-9])?))$""".r
+    //"""^((([0]?[1-9]|1[0-2])(:|\.)[0-5][0-9]((:|\.)[0-5][0-9])?( )?(AM|am|aM|Am|PM|pm|pM|Pm))|(([0]?[0-9]|1[0-9]|2[0-3])(:|\.)[0-5][0-9]((:|\.)[0-5][0-9])?))$""".r
 
     // Matches year in interval 1900-2099
     // From: http://stackoverflow.com/questions/4374185/regular-expression-match-to-test-for-a-valid-year
@@ -108,7 +113,7 @@ object DateTokenFactory {
             if (year.nonEmpty) Some(YearToken(year.get))
             else {
                 var month = new DateFormatSymbols(Locale.UK).getMonths.map(m => m.toLowerCase()).indexOf(token.toLowerCase()) //monthRegEx.findFirstIn(token)
-                month  = if (month != -1) month else new DateFormatSymbols(Locale.UK).getShortMonths.map(m => m.toLowerCase()).indexOf(token.toLowerCase())
+                month = if (month != -1) month else new DateFormatSymbols(Locale.UK).getShortMonths.map(m => m.toLowerCase()).indexOf(token.toLowerCase())
                 if (month != -1) Some(MonthToken((month + 1).toString))
                 else {
                     val dayOfMonth = dayOfMonthRegEx.findFirstIn(token)
@@ -171,37 +176,64 @@ case class TimeToken(token: String) extends DateTokenLike {
         .appendText(AMPM_OF_DAY)
         .toFormatter()
 
-//    private val formatter12HhoursOnly = new DateTimeFormatterBuilder()
-//        .appendValue(HOUR_OF_AMPM, 1, 2, SignStyle.NEVER)
-//        .appendLiteral(':')
-//        .appendValue(MINUTE_OF_HOUR, 1, 2, SignStyle.NEVER)
-//        .optionalStart()
-//        .appendLiteral(':')
-//        .appendValue(SECOND_OF_MINUTE, 1, 2, SignStyle.NEVER)
-//        .optionalStart()
-//        .appendFraction(NANO_OF_SECOND, 0, 9, true)
-//        .optionalEnd()
-//        .optionalEnd()
-//        .appendText(AMPM_OF_DAY)
-//        .toFormatter()
+    private val formatter12HwithDot = new DateTimeFormatterBuilder()
+        .appendValue(HOUR_OF_AMPM, 1, 2, SignStyle.NEVER)
+        .optionalStart()
+        .appendLiteral('.')
+        .appendValue(MINUTE_OF_HOUR, 1, 2, SignStyle.NEVER)
+        .optionalStart()
+        .appendLiteral('.')
+        .appendValue(SECOND_OF_MINUTE, 1, 2, SignStyle.NEVER)
+        .optionalStart()
+        .appendFraction(NANO_OF_SECOND, 0, 9, true)
+        .optionalEnd()
+        .optionalEnd()
+        .optionalEnd()
+        .appendText(AMPM_OF_DAY)
+        .toFormatter()
 
-    private def format24H: Option[LocalTime] = {
-        try {
-            Some(LocalTime.parse(token, formatter24H))
-        } catch {
-            case _: Throwable => None
-        }
-    }
+    //    private val formatter12HhoursOnly = new DateTimeFormatterBuilder()
+    //        .appendValue(HOUR_OF_AMPM, 1, 2, SignStyle.NEVER)
+    //        .appendLiteral(':')
+    //        .appendValue(MINUTE_OF_HOUR, 1, 2, SignStyle.NEVER)
+    //        .optionalStart()
+    //        .appendLiteral(':')
+    //        .appendValue(SECOND_OF_MINUTE, 1, 2, SignStyle.NEVER)
+    //        .optionalStart()
+    //        .appendFraction(NANO_OF_SECOND, 0, 9, true)
+    //        .optionalEnd()
+    //        .optionalEnd()
+    //        .appendText(AMPM_OF_DAY)
+    //        .toFormatter()
 
-    private def format12H: Option[LocalTime] = {
-        try {
-            Some(LocalTime.parse(token, formatter12H))
-        } catch {
-            case _: Throwable => None
-        }
-    }
+    //    private def format24H: Option[LocalTime] = {
+    //        try {
+    //            Some(LocalTime.parse(token, formatter24H))
+    //        } catch {
+    //            case _: Throwable => None
+    //        }
+    //    }
+
+    private def format24H: Option[LocalTime] = Try {
+        LocalTime.parse(token, formatter24H)
+    }.toOption
+
+    private def format12H: Option[LocalTime] = Try {
+        if (token.contains(':')) LocalTime.parse(token, formatter12H)
+        else LocalTime.parse(token, formatter12HwithDot)
+    }.toOption
+
+    //        catch {
+    //            case _: Throwable => None
+    //            //Some(LocalTime.parse("11:11pm", formatter12H)) // FIX if not valid time e.g. Some(LocalTime.parse("11:11pm", formatter12H)) // FIX if not valid time e.g.
+    //        }
+    //  }
 
     def time: LocalTime = {
-        if (format12H.nonEmpty) format12H.get else format24H.get
+        if (format12H.isEmpty) {
+            if (format24H.isEmpty) LocalTime.parse("11:11PM", formatter12H)   ///  // refactor may return null
+            else format24H.get
+        }
+        else format12H.get
     }
 }

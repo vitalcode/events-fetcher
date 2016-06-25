@@ -40,6 +40,21 @@ class DateParserTest extends WordSpec with ShouldMatchers {
                 assertDateParser("Date:Fri 08 Jul, Time:8pm",
                     LocalDateTime.of(year, Month.JULY, 8, 20, 0))
             }
+            "parse week day month no year + from with dot" in {
+                val year = LocalDateTime.now().getYear
+                assertDateParser("Date:Sun 10 Jul Time:5.45pm",
+                    LocalDateTime.of(year, Month.JULY, 10, 17, 45))
+            }
+            "parse week day month no year + from with dot 44" in {
+                val year = LocalDateTime.now().getYear
+                assertDateParser("Time:Sun 27 Nov",
+                    LocalDateTime.of(year, Month.NOVEMBER, 27, 0, 0))
+            }
+            "parse multiple week & day combination followed by month - no year + from" in {
+                val year = LocalDateTime.now().getYear
+                assertDateParser("Date:Sun 25, Tue 27 &amp; Fri 30 Sep Time:8pm",
+                    LocalDateTime.of(year, Month.SEPTEMBER, 25, 20, 0)) // TODO parse multiple dates not just first one
+            }
         }
     }
 
