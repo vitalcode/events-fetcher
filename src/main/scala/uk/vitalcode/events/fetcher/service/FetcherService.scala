@@ -25,16 +25,38 @@ object FetcherService extends Serializable with Log {
 
         val esResource = s"$esIndex/$esType"
 
+        //                pages.foreach(page => {
+        //                    rdd.map(row => (getIndexId(row._2), getRowData(row)))
+        //                        .groupByKey()
+        //                        .map(document => (
+        //                            document._1,
+        //                            document._2.flatMap(tt => tt.fetchPropertyValues(page))
+        //                                .groupBy(_._1)
+        //                                .map { case (prop, value) => (prop, value.map(_._2).toList) }
+        //                            )
+        //                        )
+        //                        .saveToEsWithMeta(esResource)
+        //                })
+
         pages.foreach(page => {
-            rdd.map(row => (getIndexId(row._2), getRowData(row)))
+            rdd.map(row => {
+                (getIndexId(row._2), getRowData(row))
+            })
                 .groupByKey()
                 .map(document => (
                     document._1,
-                    document._2.flatMap(tt => tt.fetchPropertyValues(page))
+                    document._2.flatMap(tt => {
+                        val propVal = tt.fetchPropertyValues(page)
+                        propVal
+                    })
                         .groupBy(_._1)
-                        .map { case (prop, value) => (prop, value.map(_._2).toList) }
+                        .map { case (prop, value) => {
+                            (prop, value.map(_._2).toList)
+                        }
+                        }
                     )
                 )
+                .filter(_._2.nonEmpty)
                 .saveToEsWithMeta(esResource)
         })
     }
@@ -82,6 +104,7 @@ object FetcherService extends Serializable with Log {
                     case _ => props.foreach(prop => propertyValues = propertyValues :+(prop.name, url))
                 }
             })
+            //if (propertyValues.nonEmpty) Some(propertyValues) else None
             propertyValues
         }
 

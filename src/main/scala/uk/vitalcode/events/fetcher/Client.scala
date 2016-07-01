@@ -34,6 +34,7 @@ object Client {
         val testType = AppConfig.elasticType
         val pages = Pages.all
 
-        FetcherService.fetchPages(pages, sc, hBaseConf, testIndex, testType)
+
+        pages.foreach(p => FetcherService.fetchPages(Set[Page](p), sc, hBaseConf, testIndex, testType))
     }
 }
