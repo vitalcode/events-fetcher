@@ -37,21 +37,52 @@ object DateParser extends ParserLike[(String, String)] with Log {
 
         log.info(s"ParseAsDateTime: date tokens [${tokens.size}] [${tokens.mkString(",")}]")
 
-        val dates: Vector[LocalDate] = tokens.grouped(3) // todo scan for dates 1 -> 5
-            .flatMap(g => {
-            val year = g.find(ty => ty.isInstanceOf[YearToken])
-            val month = g.filter(tm => tm.isInstanceOf[MonthToken]).map(ty => ty.asInstanceOf[MonthToken]).headOption
-            val dayOfMonth = g.find(ty => ty.isInstanceOf[DayOfMonthToken])
-            if (month.nonEmpty && dayOfMonth.nonEmpty) {
-                Vector(DateToken(LocalDate.of(
-                    if (year.isEmpty) LocalDateTime.now().getYear else year.get.token.toInt,
-                    month.get.getMonth,
-                    dayOfMonth.get.token.toInt)))
-            } else g
-        })
-            .filter(d => d.isInstanceOf[DateToken])
-            .map(d => d.asInstanceOf[DateToken].dateTime)
-            .toVector
+
+        val dates: Vector[LocalDate] = (1 to 4)
+            .flatMap(i => tokens.grouped(i)
+                .map(h => {
+                    h
+                })
+                .flatMap(g => {
+                    val year = g.find(ty => ty.isInstanceOf[YearToken])
+                    val month = g.filter(tm => tm.isInstanceOf[MonthToken]).map(ty => ty.asInstanceOf[MonthToken])
+                    val dayOfMonth = g.filter(ty => ty.isInstanceOf[DayOfMonthToken])
+                    if (month.nonEmpty && dayOfMonth.nonEmpty) {
+                        (for {
+                            m <- month
+                            dm <- dayOfMonth
+
+                        } yield DateToken(LocalDate.of(
+                            if (year.isEmpty) LocalDateTime.now().getYear else year.get.token.toInt,
+                            m.getMonth,
+                            dm.token.toInt))
+                            ).toVector
+                        //
+                        //                        Vector(DateToken(LocalDate.of(
+                        //                            if (year.isEmpty) LocalDateTime.now().getYear else year.get.token.toInt,
+                        //                            month.get.getMonth,
+                        //                            dayOfMonth.get.token.toInt)))
+                    } else g
+                })
+                .filter(d => d.isInstanceOf[DateToken])
+                .map(d => d.asInstanceOf[DateToken].dateTime)
+            ).distinct.toVector
+
+        //        val dates: Vector[LocalDate] = tokens.grouped(4) // todo scan for dates 1 -> 5
+        //            .flatMap(g => {
+        //            val year = g.find(ty => ty.isInstanceOf[YearToken])
+        //            val month = g.filter(tm => tm.isInstanceOf[MonthToken]).map(ty => ty.asInstanceOf[MonthToken]).headOption
+        //            val dayOfMonth = g.find(ty => ty.isInstanceOf[DayOfMonthToken])
+        //            if (month.nonEmpty && dayOfMonth.nonEmpty) {
+        //                Vector(DateToken(LocalDate.of(
+        //                    if (year.isEmpty) LocalDateTime.now().getYear else year.get.token.toInt,
+        //                    month.get.getMonth,
+        //                    dayOfMonth.get.token.toInt)))
+        //            } else g
+        //        })
+        //            .filter(d => d.isInstanceOf[DateToken])
+        //            .map(d => d.asInstanceOf[DateToken].dateTime)
+        //            .toVector
 
         log.info(s"ParseAsDateTime: date dates [${dates.size}] [${dates}]")
 
@@ -63,11 +94,10 @@ object DateParser extends ParserLike[(String, String)] with Log {
         log.info(s"ParseAsDateTime: date times [${times.size}] [${times}]")
 
         dates.size match {
+            case 0 => ???
             case 1 => analyseOneDatePattern(dates, times)
             case 2 => analyseDateRangePattern(dates, times)
-            case _ => {
-                ???
-            }
+            case _ => analyseMultipleDatesPattern(dates, times)
         }
 
         // analyseOneDatePattern(dates, times)
@@ -81,10 +111,15 @@ object DateParser extends ParserLike[(String, String)] with Log {
         //        Set((fromDate, toDate), (fromDate.plusDays(2), toDate.plusDays(2)))
     }
 
-    // TODO need to pass dates as LocalDate
     private def analyseDateRangePattern(dates: Vector[LocalDate], times: Vector[LocalTime]): Set[(LocalDateTime, LocalDateTime)] = {
         DateTimeUtil.datesInRange(dates(0), dates(1))
             .map(d => (dateWithTime(d, times.headOption), dateWithTime(d, times.lastOption)))
+    }
+
+    private def analyseMultipleDatesPattern(dates: Vector[LocalDate], times: Vector[LocalTime]): Set[(LocalDateTime, LocalDateTime)] = {
+        val fromTime = times.headOption
+        val toTime = times.lastOption
+        dates.map(d => (dateWithTime(d, fromTime), dateWithTime(d, toTime))).toSet
     }
 
     private def dateWithTime(date: LocalDate, time: Option[LocalTime]): LocalDateTime = {
