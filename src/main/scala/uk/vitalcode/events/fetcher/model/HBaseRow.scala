@@ -29,7 +29,7 @@ class HBaseRow(url: String, data: String, mineType: String, pageId: String) exte
                     if (prop.css != null) {
                         jerry(data).$(prop.css).each(new JerryNodeFunction {
                             override def onNode(node: Node, index: Int): Boolean = {
-                                fullProp = fullProp.copy(values = fullProp.values + node.getTextContent
+                                fullProp = fullProp.copy(values = fullProp.values :+ node.getTextContent
                                     .replaceAll( """\s{2,}""", " ")
                                     .replaceAll( """^\s|\s$""", ""))
                                 true

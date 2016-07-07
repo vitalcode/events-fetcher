@@ -3,7 +3,7 @@ package uk.vitalcode.events.fetcher.parser
 import java.text.DateFormatSymbols
 import java.time.format.{DateTimeFormatter, DateTimeFormatterBuilder, SignStyle}
 import java.time.temporal.ChronoField._
-import java.time.{LocalDate, LocalDateTime, LocalTime}
+import java.time._
 import java.util.Locale
 
 import uk.vitalcode.events.fetcher.common.Log
@@ -11,9 +11,10 @@ import uk.vitalcode.events.fetcher.service.PropertyService._
 import uk.vitalcode.events.fetcher.utils.DateTimeUtil
 import uk.vitalcode.events.model.Prop
 
+import scala.collection.immutable.IndexedSeq
 import scala.util.Try
 
-object DateParser extends ParserLike[(String, String)] with Log {
+object DateParser extends ParserLike[(String, Option[String])] with Log {
 
     // Split on white space or "-" (range character, including "-" as return token, but not before AM/PM)
     val splitRegEx =
@@ -21,11 +22,14 @@ object DateParser extends ParserLike[(String, String)] with Log {
 
     val dateFormatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME
 
-    override def parse(prop: Prop): Set[(String, String)] = {
-        parseAsDateTime(prop).map(d => Tuple2(d._1.format(dateFormatter), d._2.format(dateFormatter)))
+    override def parse(prop: Prop): Vector[(String, Option[String])] = {
+        parseAsDateTime(prop).map(d => {
+            val to: Option[String] = if (d._2.isDefined) Some(d._2.get.format(dateFormatter)) else None
+            Tuple2(d._1.format(dateFormatter), to)
+        }).toVector
     }
 
-    def parseAsDateTime(prop: Prop): Set[(LocalDateTime, LocalDateTime)] = {
+    def parseAsDateTime(prop: Prop): Set[(LocalDateTime, Option[LocalDateTime])] = {
 
         log.info(s"ParseAsDateTime: props: [${prop}]")
         log.info(s"ParseAsDateTime: props value: [${prop.values.mkString(" ")}]")
@@ -37,52 +41,22 @@ object DateParser extends ParserLike[(String, String)] with Log {
 
         log.info(s"ParseAsDateTime: date tokens [${tokens.size}] [${tokens.mkString(",")}]")
 
-
         val dates: Vector[LocalDate] = (1 to 4)
             .flatMap(i => tokens.grouped(i)
-                .map(h => {
-                    h
-                })
                 .flatMap(g => {
-                    val year = g.find(ty => ty.isInstanceOf[YearToken])
-                    val month = g.filter(tm => tm.isInstanceOf[MonthToken]).map(ty => ty.asInstanceOf[MonthToken])
-                    val dayOfMonth = g.filter(ty => ty.isInstanceOf[DayOfMonthToken])
+                    val year = g.find(ty => ty.isInstanceOf[YearToken]).map(ty => ty.asInstanceOf[YearToken])
+                    val month = g.find(tm => tm.isInstanceOf[MonthToken]).map(ty => ty.asInstanceOf[MonthToken])
+                    val dayOfMonth = g.find(ty => ty.isInstanceOf[DayOfMonthToken]).map(ty => ty.asInstanceOf[DayOfMonthToken])
                     if (month.nonEmpty && dayOfMonth.nonEmpty) {
-                        (for {
-                            m <- month
-                            dm <- dayOfMonth
-
-                        } yield DateToken(LocalDate.of(
+                        Vector(DateToken(LocalDate.of(
                             if (year.isEmpty) LocalDateTime.now().getYear else year.get.token.toInt,
-                            m.getMonth,
-                            dm.token.toInt))
-                            ).toVector
-                        //
-                        //                        Vector(DateToken(LocalDate.of(
-                        //                            if (year.isEmpty) LocalDateTime.now().getYear else year.get.token.toInt,
-                        //                            month.get.getMonth,
-                        //                            dayOfMonth.get.token.toInt)))
+                            month.get.getMonth,
+                            dayOfMonth.get.token.toInt)))
                     } else g
                 })
                 .filter(d => d.isInstanceOf[DateToken])
                 .map(d => d.asInstanceOf[DateToken].dateTime)
             ).distinct.toVector
-
-        //        val dates: Vector[LocalDate] = tokens.grouped(4) // todo scan for dates 1 -> 5
-        //            .flatMap(g => {
-        //            val year = g.find(ty => ty.isInstanceOf[YearToken])
-        //            val month = g.filter(tm => tm.isInstanceOf[MonthToken]).map(ty => ty.asInstanceOf[MonthToken]).headOption
-        //            val dayOfMonth = g.find(ty => ty.isInstanceOf[DayOfMonthToken])
-        //            if (month.nonEmpty && dayOfMonth.nonEmpty) {
-        //                Vector(DateToken(LocalDate.of(
-        //                    if (year.isEmpty) LocalDateTime.now().getYear else year.get.token.toInt,
-        //                    month.get.getMonth,
-        //                    dayOfMonth.get.token.toInt)))
-        //            } else g
-        //        })
-        //            .filter(d => d.isInstanceOf[DateToken])
-        //            .map(d => d.asInstanceOf[DateToken].dateTime)
-        //            .toVector
 
         log.info(s"ParseAsDateTime: date dates [${dates.size}] [${dates}]")
 
@@ -93,37 +67,75 @@ object DateParser extends ParserLike[(String, String)] with Log {
 
         log.info(s"ParseAsDateTime: date times [${times.size}] [${times}]")
 
+        val dayOfWeekTimes: Map[DayOfWeek, (LocalTime, LocalTime)] = (0 to 2)
+            .flatMap(i => tokens.drop(i).grouped(3)
+                .flatMap {
+                    case Array(w: DayOfWeekToken, t1: TimeToken, t2: TimeToken) => Map(w.token ->(t1.time, t2.time))
+                    case _ => Nil
+                }
+            ).toMap
+
+        log.info(s"ParseAsDateTime: date dayOfWeekTimes [${dayOfWeekTimes.size}] [${dayOfWeekTimes}]")
+
+        val daysOfWeek: Set[DayOfWeek] = tokens.flatMap {
+            case t: DayOfWeekToken => Set(t.token)
+            case _ => Nil
+        }.toSet
+
+        log.info(s"ParseAsDateTime: date daysOfWeek [${daysOfWeek.size}] [${daysOfWeek}]")
+
         dates.size match {
             case 0 => ???
             case 1 => analyseOneDatePattern(dates, times)
-            case 2 => analyseDateRangePattern(dates, times)
+            case 2 => analyseDateRangePattern(dates, daysOfWeek, dayOfWeekTimes, times)
             case _ => analyseMultipleDatesPattern(dates, times)
         }
 
         // analyseOneDatePattern(dates, times)
     }
 
+
     // TODO make as strategy
-    private def analyseOneDatePattern(dates: Vector[LocalDate], times: Vector[LocalTime]): Set[(LocalDateTime, LocalDateTime)] = {
-        val fromDate = dateWithTime(dates.head, times.headOption)
-        val toDate = dateWithTime(dates.head, times.lastOption)
-        Set((fromDate, toDate))
+    // TODO test all strategies
+    private def analyseOneDatePattern(dates: Vector[LocalDate], times: Vector[LocalTime]): Set[(LocalDateTime, Option[LocalDateTime])] = {
+        val fromDate = dateWithFromTime(dates.head, times.headOption)
+        val toDate = dateWithToTime(dates.head, times.lastOption)
+        Set((fromDate, if (fromDate != toDate) Some(toDate) else None))
         //        Set((fromDate, toDate), (fromDate.plusDays(2), toDate.plusDays(2)))
     }
 
-    private def analyseDateRangePattern(dates: Vector[LocalDate], times: Vector[LocalTime]): Set[(LocalDateTime, LocalDateTime)] = {
-        DateTimeUtil.datesInRange(dates(0), dates(1))
-            .map(d => (dateWithTime(d, times.headOption), dateWithTime(d, times.lastOption)))
+    private def analyseDateRangePattern(dates: Vector[LocalDate], daysOfWeek: Set[DayOfWeek],
+                                        dayOfWeekTimes: Map[DayOfWeek, (LocalTime, LocalTime)],
+                                        times: Vector[LocalTime]): Set[(LocalDateTime, Option[LocalDateTime])] = {
+//        DateTimeUtil.datesInRange(dates(0), dates(1), daysOfWeek)
+//            .map(d => (dateWithTime(d, times.headOption), dateWithTime(d, times.lastOption)))
+
+        DateTimeUtil.datesInRange(dates(0), dates(1), daysOfWeek)
+            .map(d => (dateWithFromTime(d, times.headOption, dayOfWeekTimes), Some(dateWithToTime(d, times.lastOption, dayOfWeekTimes))))
     }
 
-    private def analyseMultipleDatesPattern(dates: Vector[LocalDate], times: Vector[LocalTime]): Set[(LocalDateTime, LocalDateTime)] = {
+    private def analyseMultipleDatesPattern(dates: Vector[LocalDate], times: Vector[LocalTime]): Set[(LocalDateTime, Option[LocalDateTime])] = {
         val fromTime = times.headOption
         val toTime = times.lastOption
-        dates.map(d => (dateWithTime(d, fromTime), dateWithTime(d, toTime))).toSet
+        dates.map(d => (dateWithFromTime(d, fromTime), Some(dateWithToTime(d, toTime)))).toSet
     }
 
-    private def dateWithTime(date: LocalDate, time: Option[LocalTime]): LocalDateTime = {
-        LocalDateTime.of(date, time.getOrElse(LocalTime.of(0, 0)))
+    private def dateWithFromTime(date: LocalDate, time: Option[LocalTime], dayOfWeekTimes: Map[DayOfWeek, (LocalTime, LocalTime)] = Map()): LocalDateTime = {
+        LocalDateTime.of(date,
+            if (dayOfWeekTimes.isEmpty || dayOfWeekTimes.get(date.getDayOfWeek).isEmpty) time.getOrElse(LocalTime.of(0, 0))
+            else {
+                dayOfWeekTimes(date.getDayOfWeek)._1
+            }
+        )
+    }
+
+    private def dateWithToTime(date: LocalDate, time: Option[LocalTime], dayOfWeekTimes: Map[DayOfWeek, (LocalTime, LocalTime)] = Map()): LocalDateTime = {
+        LocalDateTime.of(date,
+            if (dayOfWeekTimes.isEmpty || dayOfWeekTimes.get(date.getDayOfWeek).isEmpty) time.getOrElse(LocalTime.of(0, 0))
+            else {
+                dayOfWeekTimes(date.getDayOfWeek)._2
+            }
+        )
     }
 }
 
@@ -148,20 +160,27 @@ object DateTokenFactory {
 
     private val dayOfMonthRegEx = """[0123]?[0-9]""".r //TODO fix
 
+    //private val dayOfWeekRegEx = """^(Mo(n(day)?)?|Tu(e(sday)?)?|We(d(nesday)?)?|Th(u(rsday)?)?|Fr(i(day)?)?|Sa(t(urday)?)?|Su(n(day)?)?)$""".r
+
     def create(token: String): Option[DateTokenLike] = {
-        val time = timeRegEx.findFirstIn(token)
-        if (time.nonEmpty) Some(TimeToken(time.get.replaceAll("\\s", "").toUpperCase()))
+        var week = new DateFormatSymbols(Locale.UK).getWeekdays.map(w => w.toLowerCase()).indexOf(token.toLowerCase())
+        week = if (week != -1) week else new DateFormatSymbols(Locale.UK).getShortWeekdays.map(w => w.toLowerCase()).indexOf(token.toLowerCase())
+        if (week != -1) Some(DayOfWeekToken(DayOfWeek.of(if (week > 1) week - 1 else 7)))
         else {
-            val year = yearRegEx.findFirstIn(token)
-            if (year.nonEmpty) Some(YearToken(year.get))
+            val time = timeRegEx.findFirstIn(token)
+            if (time.nonEmpty) Some(TimeToken(time.get.replaceAll("\\s", "").toUpperCase()))
             else {
-                var month = new DateFormatSymbols(Locale.UK).getMonths.map(m => m.toLowerCase()).indexOf(token.toLowerCase()) //monthRegEx.findFirstIn(token)
-                month = if (month != -1) month else new DateFormatSymbols(Locale.UK).getShortMonths.map(m => m.toLowerCase()).indexOf(token.toLowerCase())
-                if (month != -1) Some(MonthToken((month + 1).toString))
+                val year = yearRegEx.findFirstIn(token)
+                if (year.nonEmpty) Some(YearToken(year.get))
                 else {
-                    val dayOfMonth = dayOfMonthRegEx.findFirstIn(token)
-                    if (dayOfMonth.nonEmpty) Some(DayOfMonthToken(dayOfMonth.get))
-                    else None
+                    var month = new DateFormatSymbols(Locale.UK).getMonths.map(m => m.toLowerCase()).indexOf(token.toLowerCase()) //monthRegEx.findFirstIn(token)
+                    month = if (month != -1) month else new DateFormatSymbols(Locale.UK).getShortMonths.map(m => m.toLowerCase()).indexOf(token.toLowerCase())
+                    if (month != -1) Some(MonthToken((month + 1).toString))
+                    else {
+                        val dayOfMonth = dayOfMonthRegEx.findFirstIn(token)
+                        if (dayOfMonth.nonEmpty) Some(DayOfMonthToken(dayOfMonth.get))
+                        else None
+                    }
                 }
             }
         }
@@ -169,9 +188,11 @@ object DateTokenFactory {
 }
 
 
-trait DateTokenLike {
-    def token: String
-}
+trait DateTokenLike
+
+//{
+//    def token: Any
+//}
 
 case class YearToken(token: String) extends DateTokenLike
 
@@ -189,7 +210,10 @@ case class DateToken(dateTime: LocalDate) extends DateTokenLike {
     }
 }
 
-case class TimeToken(token: String) extends DateTokenLike {
+case class DayOfWeekToken(token: DayOfWeek) extends DateTokenLike
+
+
+case class TimeToken(token: String, dayOfWeek: Option[DayOfWeek] = None) extends DateTokenLike {
 
 
     private val formatter24H = new DateTimeFormatterBuilder()
@@ -235,27 +259,6 @@ case class TimeToken(token: String) extends DateTokenLike {
         .appendText(AMPM_OF_DAY)
         .toFormatter()
 
-    //    private val formatter12HhoursOnly = new DateTimeFormatterBuilder()
-    //        .appendValue(HOUR_OF_AMPM, 1, 2, SignStyle.NEVER)
-    //        .appendLiteral(':')
-    //        .appendValue(MINUTE_OF_HOUR, 1, 2, SignStyle.NEVER)
-    //        .optionalStart()
-    //        .appendLiteral(':')
-    //        .appendValue(SECOND_OF_MINUTE, 1, 2, SignStyle.NEVER)
-    //        .optionalStart()
-    //        .appendFraction(NANO_OF_SECOND, 0, 9, true)
-    //        .optionalEnd()
-    //        .optionalEnd()
-    //        .appendText(AMPM_OF_DAY)
-    //        .toFormatter()
-
-    //    private def format24H: Option[LocalTime] = {
-    //        try {
-    //            Some(LocalTime.parse(token, formatter24H))
-    //        } catch {
-    //            case _: Throwable => None
-    //        }
-    //    }
 
     private def format24H: Option[LocalTime] = Try {
         LocalTime.parse(token, formatter24H)
@@ -265,12 +268,6 @@ case class TimeToken(token: String) extends DateTokenLike {
         if (token.contains(':')) LocalTime.parse(token, formatter12H)
         else LocalTime.parse(token, formatter12HwithDot)
     }.toOption
-
-    //        catch {
-    //            case _: Throwable => None
-    //            //Some(LocalTime.parse("11:11pm", formatter12H)) // FIX if not valid time e.g. Some(LocalTime.parse("11:11pm", formatter12H)) // FIX if not valid time e.g.
-    //        }
-    //  }
 
     def time: LocalTime = {
         if (format12H.isEmpty) {

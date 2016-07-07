@@ -11,7 +11,7 @@ case class DataRowBuilder() extends Builder {
     private var row: String = _
 
     def setRowId(row: String): DataRowBuilder = {
-        this.row = row
+        //this.row = row
         this
     }
 

@@ -38,7 +38,13 @@ object FetcherService extends Serializable with Log {
                     .filter(_._1 == "when")
                     .flatMap(_._2)
                     .map {
-                        case w: Vector[_] => p +("from" -> List(w(0)), "to" -> List(w(1))) - "when"
+                        case w: Vector[_] => {
+                            if (w(1) != None) {
+                                p +("from" -> List(w(0)), "to" -> List(w(1))) - "when"
+                            } else {
+                                p + ("from" -> List(w(0))) - "when"
+                            }
+                        }
                     }
                 )
                 .map(d => d._2 + ("url" -> List(d._1)))
