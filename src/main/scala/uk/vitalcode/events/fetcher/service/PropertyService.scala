@@ -1,9 +1,10 @@
 package uk.vitalcode.events.fetcher.service
 
 import uk.vitalcode.events.model.PropType._
-import uk.vitalcode.events.fetcher.parser.{DateParser, ImageParser, TextParser}
+import uk.vitalcode.events.fetcher.parser.{ImageParser, TextParser}
 import uk.vitalcode.events.model.Prop
 import uk.vitalcode.events.fetcher.common.Log
+import uk.vitalcode.events.fetcher.parser.dateParser.DateParser
 
 
 object PropertyService extends Log {

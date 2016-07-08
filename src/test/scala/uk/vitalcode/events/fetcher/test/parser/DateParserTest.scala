@@ -3,7 +3,7 @@ package uk.vitalcode.events.fetcher.test.parser
 import java.time.{LocalDateTime, Month}
 
 import org.scalatest._
-import uk.vitalcode.events.fetcher.parser.DateParser
+import uk.vitalcode.events.fetcher.parser.dateParser.DateParser
 import uk.vitalcode.events.model.{Prop, PropType}
 
 class DateParserTest extends WordSpec with ShouldMatchers {
