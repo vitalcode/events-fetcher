@@ -2,9 +2,10 @@ package uk.vitalcode.events.fetcher.parser.dateParser
 
 import java.time.{DayOfWeek, LocalDate, LocalDateTime, LocalTime}
 
+import uk.vitalcode.events.fetcher.common.Log
 import uk.vitalcode.events.fetcher.utils.DateTimeUtil
 
-object PatternAnalyser {
+object PatternAnalyser extends Log {
 
     // todo dates should be List[LocalDate]
     def apply(dates: Vector[LocalDate],
@@ -13,7 +14,10 @@ object PatternAnalyser {
               dayOfWeekTimes: Map[DayOfWeek, (LocalTime, LocalTime)]): Set[(LocalDateTime, Option[LocalDateTime])] = {
 
         dates.toList match {
-            case Nil => ???
+            case Nil => {
+                log.info("No dates")
+                Set()
+            }
             case date :: Nil => analyseOneDatePattern(date, times)
             case fromDate :: toDate :: Nil => analyseDateRangePattern(fromDate, toDate, times, daysOfWeek, dayOfWeekTimes)
             case _ => analyseMultipleDatesPattern(dates, times)
@@ -31,7 +35,7 @@ object PatternAnalyser {
 
 
     def analyseDateRangePattern(fromDate: LocalDate,
-                                toDate:LocalDate,
+                                toDate: LocalDate,
                                 times: Vector[LocalTime],
                                 daysOfWeek: Set[DayOfWeek],
                                 dayOfWeekTimes: Map[DayOfWeek, (LocalTime, LocalTime)]): Set[(LocalDateTime, Option[LocalDateTime])] = {
