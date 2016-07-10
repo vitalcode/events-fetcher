@@ -111,6 +111,7 @@ class DateParserTest extends WordSpec with ShouldMatchers {
 // TODO Create LocalDateTime.of() in separate service, in try block
 
 // TODO Delete index befor running Spark task
+// TODo ihnore events without dates
 
 
 

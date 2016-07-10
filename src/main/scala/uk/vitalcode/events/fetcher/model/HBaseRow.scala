@@ -26,7 +26,7 @@ class HBaseRow(url: String, data: String, mineType: String, pageId: String) exte
             prop.kind match {
                 case PropType.Text | PropType.Date =>
                     var fullProp = prop
-                    if (prop.css != null) {
+                    if (prop.values.isEmpty && prop.css != null) {
                         jerry(data).$(prop.css).each(new JerryNodeFunction {
                             override def onNode(node: Node, index: Int): Boolean = {
                                 fullProp = fullProp.copy(values = fullProp.values :+ node.getTextContent
@@ -34,9 +34,9 @@ class HBaseRow(url: String, data: String, mineType: String, pageId: String) exte
                                     .replaceAll( """^\s|\s$""", ""))
                                 true
                             }
-                        })
+                        })}
+                    if (fullProp.values.nonEmpty) {
                         val propertyValue: Vector[(String, Any)] = PropertyService.getFormattedValues(fullProp)
-
                         propertyValues = propertyValues ++ propertyValue
                     }
                 case _ => props.foreach(prop => propertyValues = propertyValues :+(prop.name, url))
