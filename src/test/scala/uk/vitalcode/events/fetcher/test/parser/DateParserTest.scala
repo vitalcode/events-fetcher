@@ -110,6 +110,9 @@ class DateParserTest extends WordSpec with ShouldMatchers {
 // TODO 2 dates: could be range (if range token is present) or 2 days
 // TODO Create LocalDateTime.of() in separate service, in try block
 
+// TODO Delete index befor running Spark task
+
+
 
 // for Date token creating ignore groups with ragne token
 // 3 Feb 2017 is ne day not two

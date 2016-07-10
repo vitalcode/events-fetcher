@@ -44,7 +44,7 @@ object PatternAnalyser extends Log {
 
         val dates: Set[LocalDate] = DateTimeUtil.datesInRange(fromDate, toDate, daysOfWeek)
 
-        if (dates.size > everyDayEventMaxRepetition && daysOfWeek == Set()) Set()
+        if (dates.size > everyDayEventMaxRepetition) Set()
         else dates.map(d => (
             dateWithFromTime(d, times.headOption, dayOfWeekTimes),
             Some(dateWithToTime(d, times.lastOption, dayOfWeekTimes))
