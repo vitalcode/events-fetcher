@@ -34,8 +34,8 @@ object DateParser extends ParserLike[(String, Option[String])] with Log {
                 DateTokenFactory.create(t.trim())
             })
 
-        val dates: Vector[LocalDate] = (1 to 4)
-            .flatMap(i => tokens.grouped(i)
+        val dates: Vector[LocalDate] = (0 to 3)
+            .flatMap(i => tokens.drop(i).grouped(4)
                 .flatMap(g => {
                     val year = g.find(ty => ty.isInstanceOf[YearToken]).map(ty => ty.asInstanceOf[YearToken])
                     val month = g.find(tm => tm.isInstanceOf[MonthToken]).map(ty => ty.asInstanceOf[MonthToken])

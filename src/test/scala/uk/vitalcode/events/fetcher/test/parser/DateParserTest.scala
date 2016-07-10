@@ -78,6 +78,12 @@ class DateParserTest extends WordSpec with ShouldMatchers {
                     (LocalDateTime.of(2016, Month.JANUARY, 4, 11, 0), LocalDateTime.of(2016, Month.JANUARY, 4, 13, 0))
                 )
             }
+
+            "parse multiple week & day combination followed by month - no year + from10" in {
+                assertDateParser("(3 Feb 2017) Friday 19:30 21:30",
+                    (LocalDateTime.of(2017, Month.FEBRUARY, 3, 19, 30), LocalDateTime.of(2017, Month.FEBRUARY, 3, 21, 30))
+                )
+            }
         }
     }
 
@@ -91,3 +97,6 @@ class DateParserTest extends WordSpec with ShouldMatchers {
         DateParser.parseAsDateTime(prop) shouldBe Set((expectedFrom,None))
     }
 }
+
+// TODO 2 dates: could be range (if range token is present) or 2 days
+// TODO 3 Feb 2017 is ne day not two
