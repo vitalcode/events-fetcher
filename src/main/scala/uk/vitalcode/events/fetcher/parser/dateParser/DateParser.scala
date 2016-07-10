@@ -33,14 +33,19 @@ object DateParser extends ParserLike[(String, Option[String])] with Log {
             .flatMap(t => {
                 DateTokenFactory.create(t.trim())
             })
+        logInfo(s"tokens [${tokens.length}] [${tokens.mkString(",")}]")
 
-        val dates: Vector[LocalDate] = (0 to 3)
-            .flatMap(i => tokens.drop(i).grouped(4)
+        val dates: Vector[LocalDate] = (for {
+            drop <- 0 to 3
+            group <- 3 to 4
+        } yield (drop, group))
+            .flatMap(i => tokens.drop(i._1).grouped(i._2)
                 .flatMap(g => {
                     val year = g.find(ty => ty.isInstanceOf[YearToken]).map(ty => ty.asInstanceOf[YearToken])
                     val month = g.find(tm => tm.isInstanceOf[MonthToken]).map(ty => ty.asInstanceOf[MonthToken])
                     val dayOfMonth = g.find(ty => ty.isInstanceOf[DayOfMonthToken]).map(ty => ty.asInstanceOf[DayOfMonthToken])
-                    if (month.nonEmpty && dayOfMonth.nonEmpty) {
+                    val range = g.exists(ty => ty.isInstanceOf[RangeToken])
+                    if (month.nonEmpty && dayOfMonth.nonEmpty && !range) {
                         Vector(DateToken(LocalDate.of(
                             if (year.isEmpty) LocalDateTime.now().getYear else year.get.value,
                             month.get.value,
@@ -50,11 +55,13 @@ object DateParser extends ParserLike[(String, Option[String])] with Log {
                 .filter(d => d.isInstanceOf[DateToken])
                 .map(d => d.asInstanceOf[DateToken].value)
             ).distinct.toVector
+        logInfo(s"dates [${dates.size}] [$dates]")
 
         val times: Vector[LocalTime] = tokens.flatMap(t => t match {
             case t: TimeToken => Vector(t.value)
             case _ => None
         }).toVector
+        logInfo(s"times [${times.size}] [$times]")
 
         val dayOfWeekTimes: Map[DayOfWeek, (LocalTime, LocalTime)] = (0 to 2)
             .flatMap(i => tokens.drop(i).grouped(3)
@@ -63,17 +70,12 @@ object DateParser extends ParserLike[(String, Option[String])] with Log {
                     case _ => Nil
                 }
             ).toMap
+        logInfo(s"dayOfWeekTimes [${dayOfWeekTimes.size}] [$dayOfWeekTimes]")
 
         val daysOfWeek: Set[DayOfWeek] = tokens.flatMap {
             case t: DayOfWeekToken => Set(t.value)
             case _ => Nil
         }.toSet
-
-
-        logInfo(s"tokens [${tokens.length}] [${tokens.mkString(",")}]")
-        logInfo(s"dates [${dates.size}] [$dates]")
-        logInfo(s"times [${times.size}] [$times]")
-        logInfo(s"dayOfWeekTimes [${dayOfWeekTimes.size}] [$dayOfWeekTimes]")
         logInfo(s"daysOfWeek [${daysOfWeek.size}] [$daysOfWeek]")
 
         PatternAnalyser(dates, times, daysOfWeek, dayOfWeekTimes)

@@ -166,4 +166,18 @@ object TimeToken { // TODO refactor
 }
 
 
+case class RangeToken(value: String) extends DateTokenLike[String]
+
+object RangeToken {
+
+    private val rangeRegEx = """(-|to|until)""".r
+
+    def of(token: String): Option[RangeToken] = {
+        val range = rangeRegEx.findFirstIn(token)
+        if (range.nonEmpty) Some(RangeToken(range.get)) else None
+    }
+}
+
+
 case class DateToken(value: LocalDate) extends DateTokenLike[LocalDate]
+

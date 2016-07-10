@@ -7,6 +7,8 @@ import uk.vitalcode.events.fetcher.utils.DateTimeUtil
 
 object PatternAnalyser extends Log {
 
+    val everyDayEventMaxRepetition = 30
+
     // todo dates should be List[LocalDate]
     def apply(dates: Vector[LocalDate],
               times: Vector[LocalTime],
@@ -40,12 +42,14 @@ object PatternAnalyser extends Log {
                                 daysOfWeek: Set[DayOfWeek],
                                 dayOfWeekTimes: Map[DayOfWeek, (LocalTime, LocalTime)]): Set[(LocalDateTime, Option[LocalDateTime])] = {
 
-        DateTimeUtil.datesInRange(fromDate, toDate, daysOfWeek)
-            .map(d => (
-                dateWithFromTime(d, times.headOption, dayOfWeekTimes),
-                Some(dateWithToTime(d, times.lastOption, dayOfWeekTimes))
-                )
+        val dates: Set[LocalDate] = DateTimeUtil.datesInRange(fromDate, toDate, daysOfWeek)
+
+        if (dates.size > everyDayEventMaxRepetition && daysOfWeek == Set()) Set()
+        else dates.map(d => (
+            dateWithFromTime(d, times.headOption, dayOfWeekTimes),
+            Some(dateWithToTime(d, times.lastOption, dayOfWeekTimes))
             )
+        )
     }
 
     def analyseMultipleDatesPattern(dates: Vector[LocalDate],

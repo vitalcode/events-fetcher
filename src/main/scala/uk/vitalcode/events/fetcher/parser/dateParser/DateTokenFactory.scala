@@ -17,7 +17,10 @@ object DateTokenFactory {
                     else {
                         val dayOfMonth = DayOfMonthToken of token
                         if (dayOfMonth.nonEmpty) dayOfMonth
-                        else None
+                        else {
+                            val range = RangeToken of token
+                            if (range.nonEmpty) range else None
+                        }
                     }
                 }
             }

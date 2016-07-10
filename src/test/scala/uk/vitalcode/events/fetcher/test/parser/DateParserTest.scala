@@ -48,14 +48,14 @@ class DateParserTest extends WordSpec with ShouldMatchers {
                 assertDateParser("Time:Sun 27 Nov",
                     LocalDateTime.of(year, Month.NOVEMBER, 27, 0, 0))
             }
-//            "parse multiple week & day combination followed by month - no year + from" in {
-//                val year = LocalDateTime.now().getYear
-//                assertDateParser("Date:Sun 25, Tue 27 &amp; Fri 30 Sep Time:8pm",
-//                    (LocalDateTime.of(year, Month.SEPTEMBER, 25, 20, 0), LocalDateTime.of(year, Month.SEPTEMBER, 25, 20, 0)),
-//                    (LocalDateTime.of(year, Month.SEPTEMBER, 27, 20, 0), LocalDateTime.of(year, Month.SEPTEMBER, 27, 20, 0)),
-//                    (LocalDateTime.of(year, Month.SEPTEMBER, 30, 20, 0), LocalDateTime.of(year, Month.SEPTEMBER, 30, 20, 0))
-//                )
-//            }
+            //            "parse multiple week & day combination followed by month - no year + from" in {
+            //                val year = LocalDateTime.now().getYear
+            //                assertDateParser("Date:Sun 25, Tue 27 &amp; Fri 30 Sep Time:8pm",
+            //                    (LocalDateTime.of(year, Month.SEPTEMBER, 25, 20, 0), LocalDateTime.of(year, Month.SEPTEMBER, 25, 20, 0)),
+            //                    (LocalDateTime.of(year, Month.SEPTEMBER, 27, 20, 0), LocalDateTime.of(year, Month.SEPTEMBER, 27, 20, 0)),
+            //                    (LocalDateTime.of(year, Month.SEPTEMBER, 30, 20, 0), LocalDateTime.of(year, Month.SEPTEMBER, 30, 20, 0))
+            //                )
+            //            }
 
             "parse multiple week & day combination followed by month - no year + from4" in {
                 assertDateParser("(1 Jan 2016 - 3 Jan 2016) 11:00 13:00",
@@ -84,6 +84,10 @@ class DateParserTest extends WordSpec with ShouldMatchers {
                     (LocalDateTime.of(2017, Month.FEBRUARY, 3, 19, 30), LocalDateTime.of(2017, Month.FEBRUARY, 3, 21, 30))
                 )
             }
+
+            "parse multiple week & day combination followed by month - no year + from11" in {
+                assertDateParser("(1 Feb 2016 - 31 Oct 2016)")
+            }
         }
     }
 
@@ -94,9 +98,19 @@ class DateParserTest extends WordSpec with ShouldMatchers {
 
     private def assertDateParser(dateText: String, expectedFrom: LocalDateTime): Unit = {
         val prop = Prop(null, null, PropType.Date, Vector[String](dateText))
-        DateParser.parseAsDateTime(prop) shouldBe Set((expectedFrom,None))
+        DateParser.parseAsDateTime(prop) shouldBe Set((expectedFrom, None))
+    }
+
+    private def assertDateParser(dateText: String): Unit = {
+        val prop = Prop(null, null, PropType.Date, Vector[String](dateText))
+        DateParser.parseAsDateTime(prop) shouldBe Set()
     }
 }
 
 // TODO 2 dates: could be range (if range token is present) or 2 days
-// TODO 3 Feb 2017 is ne day not two
+// TODO Create LocalDateTime.of() in separate service, in try block
+
+
+// for Date token creating ignore groups with ragne token
+// 3 Feb 2017 is ne day not two
+// indore every day events, ex When week days specified
