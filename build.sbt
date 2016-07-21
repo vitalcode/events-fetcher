@@ -13,7 +13,7 @@ resolvers ++= Seq(
 )
 
 libraryDependencies ++= {
-    val joddV = "3.5.2"//"3.7"
+    val joddV = "3.5.2" //"3.7"
     val clouderaV = "cdh5.4.7"
     val zooV = s"3.4.5-$clouderaV"
     val hadoopV = s"2.6.0-$clouderaV"
@@ -27,6 +27,7 @@ libraryDependencies ++= {
     val configV = "1.3.0"
     val scalaHttpV = "2.2.1"
     val eventsModelV = "0.0.1"
+    val lucineV = "6.1.0"
 
     Seq(
         "org.apache.zookeeper" % "zookeeper" % zooV,
@@ -38,8 +39,12 @@ libraryDependencies ++= {
         "org.apache.hbase" % "hbase-hadoop-compat" % hbaseV,
         "org.apache.hadoop" % "hadoop-common" % hadoopV excludeAll ExclusionRule(organization = "javax.servlet"),
         "org.apache.hadoop" % "hadoop-client" % hadoopV excludeAll ExclusionRule(organization = "javax.servlet") exclude("com.google.guava", "guava"),
-        "org.apache.spark" %% "spark-core" % sparkV,
 
+        "org.apache.spark" %% "spark-core" % "1.5.0",
+        "org.apache.spark" %% "spark-mllib" % "1.5.0",
+        "org.apache.spark" %% "spark-sql" % "1.5.0",
+
+        "org.apache.lucene" % "lucene-analyzers-common" % lucineV,
         "org.elasticsearch" %% "elasticsearch-spark" % "2.1.0.Beta4",
 
         "org.apache.htrace" % "htrace-core" % "3.1.0-incubating",
