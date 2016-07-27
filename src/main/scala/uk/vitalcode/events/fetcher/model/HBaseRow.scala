@@ -9,7 +9,7 @@ import uk.vitalcode.events.fetcher.service.PropertyService
 import uk.vitalcode.events.model.{Page, Prop, PropType}
 import uk.vitalcode.events.fetcher.utils.HBaseUtil.getColumnValue
 
-class HBaseRow(url: String, data: String, mineType: String, pageId: String) extends Serializable {
+class HBaseRow(url: String, data: String, mineType: String, pageId: String, fields: Map[String, Seq[String]] = Map()) extends Serializable {
 
     def this(row: (ImmutableBytesWritable, Result)) = this(
         getColumnValue(row._2, "metadata", "url"),

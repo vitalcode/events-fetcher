@@ -1,18 +1,22 @@
 package uk.vitalcode.events.fetcher.utils
 
-import java.io.StringReader
+import java.io.{InputStream, StringReader}
 
 import org.apache.lucene.analysis.en.EnglishAnalyzer
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute
 import org.apache.lucene.analysis.{Analyzer, TokenStream}
 import org.apache.spark.SparkContext
-import org.apache.spark.ml.Pipeline
+import org.apache.spark.ml.{Pipeline, PipelineModel}
 import org.apache.spark.ml.classification.NaiveBayes
 import org.apache.spark.ml.feature.{HashingTF, IDF, Tokenizer}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{Row, SQLContext}
 
 import scala.collection.mutable.ListBuffer
+import uk.vitalcode.events.model.Category
+import uk.vitalcode.events.model.Category.Category
+
+import scala.reflect.io.Path
 
 object MLUtil {
 
@@ -33,21 +37,43 @@ object MLUtil {
         }
     }
 
-    def classifier(sc: SparkContext): Double = {
+    def predictEventCategory(sc: SparkContext, text: String): Category = {
 
         val sqlContext = SQLContextSingleton.getInstance(sc)
         import sqlContext.implicits._
 
-        // train
-        val home = "/Users/vitaliy/data/20news-bydate-short"
-        val trainPath = s"$home/20news-bydate-train/*"
+        val dfTest = sc.parallelize(Seq((0, text))).toDF
+        val label = Model.getInstance(sc).transform(dfTest)
+            .select("prediction")
+            .map { case Row(p: Double) => p }
+            .collect()
+            .head.toInt
+
+        Category(label)
+    }
+}
+
+object Model {
+
+    @transient
+    private var instance: PipelineModel = _
+
+    def getInstance(sparkContext: SparkContext): PipelineModel = {
+        if (instance == null) {
+            instance = buildModel(sparkContext)
+        }
+        instance
+    }
+
+    private def buildModel(sc: SparkContext): PipelineModel = {
+
+        val sqlContext = SQLContextSingleton.getInstance(sc)
+        import sqlContext.implicits._
+
+        val trainPath = Path(this.getClass.getResource("/").getPath)./("EventCategoryTrain/*").toString()
         val trainRDD: RDD[(String, String)] = sc.wholeTextFiles(trainPath)
-        val data = trainRDD.map { case (file, text) => (file.split("/").takeRight(2).head match {
-            case "alt.atheism" => 0D
-            case "comp.graphics" => 1D
-            case "comp.os.ms-windows.misc" => 2D
-            case _ => 3D
-        }, text)
+        val data = trainRDD.map {
+            case (file, text) => (Category.withName(file.split("/").takeRight(2).head.toUpperCase).id.toDouble, text)
         }.toDF
 
         val tokenizer = new Tokenizer().setInputCol("_2").setOutputCol("words")
@@ -56,30 +82,10 @@ object MLUtil {
         val rf = new NaiveBayes().setLabelCol("_1").setFeaturesCol("features")
         val pipeline = new Pipeline().setStages(Array(tokenizer, hashingTF, idf, rf))
 
-        val idfModel = pipeline.fit(data)
-
-        // test
-        val testPath = s"$home/20news-bydate-test/*"
-        val testRDD = sc.wholeTextFiles(testPath)
-
-        val testdData = trainRDD.map { case (file, text) => (file.split("/").takeRight(2).head match {
-            case "alt.atheism" => 0D
-            case "comp.graphics" => 1D
-            case "comp.os.ms-windows.misc" => 2D
-            case _ => 3D
-        }, text)
-        }.toDF
-
-        val result = idfModel.transform(testdData)
-
-        result.select("_1", "prediction")
-            .collect()
-            .count { case Row(ac: Double, ex: Double) => ac == ex }
-            .toDouble / result.count
+        pipeline.fit(data)
     }
 }
 
-/** Lazily instantiated singleton instance of SQLContext */
 object SQLContextSingleton {
 
     @transient

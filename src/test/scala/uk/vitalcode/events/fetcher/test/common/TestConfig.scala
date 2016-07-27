@@ -10,6 +10,10 @@ object TestConfig {
         conf.getString("fetcher.hbase.table")
     }
 
+    def dataTable: String = {
+        conf.getString("fetcher.hbase.dataTable")
+    }
+
     def hbaseZookeeperQuorum: String = {
         conf.getString("fetcher.hbase.zookeeperQuorum")
     }

@@ -23,6 +23,7 @@ trait FetcherTest extends WordSpec with ShouldMatchers with BeforeAndAfterEach w
     protected var hBaseConn: Connection = _
     protected var hBaseConf: Configuration = _
     protected val testTable: TableName = TableName.valueOf(TestConfig.hbaseTable)
+    protected val dataTable: TableName = TableName.valueOf(TestConfig.dataTable)
 
     protected val esIndex = TestConfig.elasticIndex
     protected val esType = TestConfig.elasticType
@@ -55,11 +56,22 @@ trait FetcherTest extends WordSpec with ShouldMatchers with BeforeAndAfterEach w
             log.info(s"Test table [$testTable] deleted")
         }
 
+        if (admin.isTableAvailable(dataTable)) {
+            admin.disableTable(dataTable)
+            admin.deleteTable(dataTable)
+            log.info(s"Test table [$dataTable] deleted")
+        }
+
         val tableDescriptor: HTableDescriptor = new HTableDescriptor(testTable)
         tableDescriptor.addFamily(new HColumnDescriptor("content"))
         tableDescriptor.addFamily(new HColumnDescriptor("metadata"))
         admin.createTable(tableDescriptor)
         log.info(s"New Test table [$testTable] created")
+
+        val dataTableDescriptor: HTableDescriptor = new HTableDescriptor(dataTable)
+        dataTableDescriptor.addFamily(new HColumnDescriptor("prop"))
+        admin.createTable(dataTableDescriptor)
+        log.info(s"New data table [$dataTable] created")
 
         admin.close()
     }

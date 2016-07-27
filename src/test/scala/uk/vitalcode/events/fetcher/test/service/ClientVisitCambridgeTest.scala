@@ -67,6 +67,7 @@ class ClientVisitCambridgeTest extends FetcherTest {
             .addColumn("url", "http://www.visitcambridge.org/whats-on/official-guided-tours-cambridge-college-tour-including-kings-college-p568001")
             .addColumn("from", from)
             .addColumn("to", to)
+            .addColumn("category", "family")
     }
 
     private def buildEventList1Details2(from: String, to: String): DataRowBuilder = {
@@ -82,6 +83,7 @@ class ClientVisitCambridgeTest extends FetcherTest {
             .addColumn("url", "http://www.visitcambridge.org/whats-on/cambridge-thai-festival-p686901")
             .addColumn("from", from)
             .addColumn("to", to)
+            .addColumn("category", "family")
     }
 }
 
