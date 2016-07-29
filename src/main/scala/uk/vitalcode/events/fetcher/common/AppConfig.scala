@@ -6,8 +6,12 @@ object AppConfig {
 
     val conf: Config = ConfigFactory.load()
 
-    def hbaseTable: String = {
-        conf.getString("fetcher.hbase.table")
+    def pageTable: String = {
+        conf.getString("fetcher.hbase.pageTable")
+    }
+
+    def eventTable: String = {
+        conf.getString("fetcher.hbase.eventTable")
     }
 
     def hbaseZookeeperQuorum: String = {

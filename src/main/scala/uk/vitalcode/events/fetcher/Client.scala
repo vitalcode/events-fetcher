@@ -21,7 +21,7 @@ object Client {
 
         val hBaseConf: Configuration = HBaseConfiguration.create()
         hBaseConf.set(HConstants.ZOOKEEPER_QUORUM, AppConfig.hbaseZookeeperQuorum)
-        hBaseConf.set(TableInputFormat.INPUT_TABLE, AppConfig.hbaseTable)
+        hBaseConf.set(TableInputFormat.INPUT_TABLE, AppConfig.pageTable)
 
         fetchPages(sc, hBaseConf)
 
@@ -32,9 +32,12 @@ object Client {
 
         val testIndex = AppConfig.elasticIndex
         val testType = AppConfig.elasticType
+
+        val pageTable = AppConfig.pageTable
+        val eventTable = AppConfig.eventTable
+
         val pages = Pages.all
 
-
-        pages.foreach(p => FetcherService.fetchPages(Set[Page](p), sc, hBaseConf, testIndex, testType))
+        pages.foreach(p => FetcherService.fetchPages(Set[Page](p), sc, hBaseConf, pageTable, testIndex, eventTable, testType))
     }
 }

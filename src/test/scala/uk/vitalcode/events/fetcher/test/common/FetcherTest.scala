@@ -22,13 +22,16 @@ trait FetcherTest extends WordSpec with ShouldMatchers with BeforeAndAfterEach w
     protected var sc: SparkContext = _
     protected var hBaseConn: Connection = _
     protected var hBaseConf: Configuration = _
-    protected val testTable: TableName = TableName.valueOf(TestConfig.hbaseTable)
-    protected val dataTable: TableName = TableName.valueOf(TestConfig.dataTable)
+
+    protected val pageTable: String = TestConfig.pageTable
+    protected val eventTable: String = TestConfig.eventTable
+
+    protected val pageTableName: TableName = TableName.valueOf(pageTable)
+    protected val eventTableName: TableName = TableName.valueOf(eventTable)
 
     protected val esIndex = TestConfig.elasticIndex
     protected val esType = TestConfig.elasticType
     protected val esResource = s"$esIndex/$esType"
-
 
     protected def esData(): DataTable = {
         Thread.sleep(1000)
@@ -50,34 +53,34 @@ trait FetcherTest extends WordSpec with ShouldMatchers with BeforeAndAfterEach w
 
     private def createTestTable(): Unit = {
         val admin: Admin = hBaseConn.getAdmin()
-        if (admin.isTableAvailable(testTable)) {
-            admin.disableTable(testTable)
-            admin.deleteTable(testTable)
-            log.info(s"Test table [$testTable] deleted")
+        if (admin.isTableAvailable(pageTableName)) {
+            admin.disableTable(pageTableName)
+            admin.deleteTable(pageTableName)
+            log.info(s"Test table [$pageTableName] deleted")
         }
 
-        if (admin.isTableAvailable(dataTable)) {
-            admin.disableTable(dataTable)
-            admin.deleteTable(dataTable)
-            log.info(s"Test table [$dataTable] deleted")
+        if (admin.isTableAvailable(eventTableName)) {
+            admin.disableTable(eventTableName)
+            admin.deleteTable(eventTableName)
+            log.info(s"Test table [$eventTableName] deleted")
         }
 
-        val tableDescriptor: HTableDescriptor = new HTableDescriptor(testTable)
+        val tableDescriptor: HTableDescriptor = new HTableDescriptor(pageTableName)
         tableDescriptor.addFamily(new HColumnDescriptor("content"))
         tableDescriptor.addFamily(new HColumnDescriptor("metadata"))
         admin.createTable(tableDescriptor)
-        log.info(s"New Test table [$testTable] created")
+        log.info(s"New Test table [$pageTableName] created")
 
-        val dataTableDescriptor: HTableDescriptor = new HTableDescriptor(dataTable)
+        val dataTableDescriptor: HTableDescriptor = new HTableDescriptor(eventTableName)
         dataTableDescriptor.addFamily(new HColumnDescriptor("prop"))
         admin.createTable(dataTableDescriptor)
-        log.info(s"New data table [$dataTable] created")
+        log.info(s"New data table [$eventTableName] created")
 
         admin.close()
     }
 
     protected def putTestDataRow(url: String, pagePath: String, mineType: MineType, indexId: String, pageId: String): Unit = {
-        val table: Table = hBaseConn.getTable(testTable)
+        val table: Table = hBaseConn.getTable(pageTableName)
 
         val data: Array[Byte] = getPage(pagePath)
         val put: Put = new Put(Bytes.toBytes(url))
@@ -87,7 +90,7 @@ trait FetcherTest extends WordSpec with ShouldMatchers with BeforeAndAfterEach w
         put.addColumn(Bytes.toBytes("metadata"), Bytes.toBytes("mineType"), Bytes.toBytes(mineType.toString))
         put.addColumn(Bytes.toBytes("metadata"), Bytes.toBytes("indexId"), Bytes.toBytes(indexId))
         put.addColumn(Bytes.toBytes("metadata"), Bytes.toBytes("pageId"), Bytes.toBytes(pageId))
-        log.info(s"Add row [$url] with content of MINE type [$mineType] to the test table [$testTable]")
+        log.info(s"Add row [$url] with content of MINE type [$mineType] to the test table [$pageTableName]")
         table.put(put)
 
         table.close()
@@ -111,7 +114,7 @@ trait FetcherTest extends WordSpec with ShouldMatchers with BeforeAndAfterEach w
 
         hBaseConf = HBaseConfiguration.create()
         hBaseConf.set(HConstants.ZOOKEEPER_QUORUM, TestConfig.hbaseZookeeperQuorum)
-        hBaseConf.set(TableInputFormat.INPUT_TABLE, Bytes.toString(testTable.getName))
+//        hBaseConf.set(TableInputFormat.INPUT_TABLE, Bytes.toString(testTable.getName))
         hBaseConn = ConnectionFactory.createConnection(hBaseConf)
 
         prepareTestData()

@@ -13,7 +13,7 @@ class FetcherServiceTest extends FetcherTest {
         "fetching data from Cambridge science centre web site" when {
             "building event record from description event pages only" should {
                 "fetch all expected property values" in {
-                    FetcherService.fetchPages(Set[Page](cambridge.CambridgeScienceCentre.page), sc, hBaseConf, esIndex, esType)
+                    FetcherService.fetchPages(Set[Page](cambridge.CambridgeScienceCentre.page), sc, hBaseConf, pageTable, eventTable, esIndex, esType)
                     val actual = esData()
                     val expected = expectedEsDataDescription()
                     actual shouldBe expected
@@ -96,7 +96,8 @@ class FetcherServiceTest extends FetcherTest {
                 .addColumn("image", "http://www.cambridgesciencecentre.org/media/assets/3a/969c39e09b655c715be0aa6b578908427d75e7.jpg")
                 .addColumn("url", "http://www.cambridgesciencecentre.org/whats-on/events/destination-space-crew-09012016-1500/")
                 .addColumn("venue", "Cambridge Science Centre, 18 Jesus Lane, Cambridge, CB5 8BQ")
-                .addColumn("from", "2016-01-09T15:00:00"))
+                .addColumn("from", "2016-01-09T15:00:00")
+                .addColumn("category", "family"))
             .addRow(DataRowBuilder().setRowId("http://www.cambridgesciencecentre.org/whats-on/events/Voyagetospace_09012016_1600/")
                 .addColumn("title", "Explore Your Universe: Star Light, Star Bright")
                 .addColumn("description", "Explore Your Universe in our Cosmic show as we take a look at the stars! Discover how we can use hidden light and special cameras to discover more about our world, our Sun and other solar systems.")
@@ -104,7 +105,8 @@ class FetcherServiceTest extends FetcherTest {
                 .addColumn("image", "http://www.cambridgesciencecentre.org/media/assets/3a/0004a8c035b90924f8321df21276fc8f83a6cd.jpg")
                 .addColumn("url", "http://www.cambridgesciencecentre.org/whats-on/events/Voyagetospace_09012016_1600/")
                 .addColumn("venue", "Cambridge Science Centre, 18 Jesus Lane, Cambridge, CB5 8BQ")
-                .addColumn("from", "2016-01-09T16:00:00"))
+                .addColumn("from", "2016-01-09T16:00:00")
+                .addColumn("category", "family"))
             .addRow(DataRowBuilder().setRowId("http://www.cambridgesciencecentre.org/whats-on/events/otherworlds/")
                 .addColumn("title", "Other Worlds")
                 .addColumn("description", "The first planet orbiting another star was discovered by Didier Queloz in 1995; now thousands more have been found. Discuss with Professor Queloz what these exotic worlds may be like and how we are continuing our search.")
@@ -113,7 +115,8 @@ class FetcherServiceTest extends FetcherTest {
                 .addColumn("url", "http://www.cambridgesciencecentre.org/whats-on/events/otherworlds/")
                 .addColumn("venue", "Cambridge Science Centre, 18 Jesus Lane, Cambridge, CB5 8BQ")
                 .addColumn("from", "2016-03-17T19:00:00")
-                .addColumn("to", "2016-03-17T20:30:00"))
+                .addColumn("to", "2016-03-17T20:30:00")
+                .addColumn("category", "family"))
             .addRow(DataRowBuilder().setRowId("http://www.cambridgesciencecentre.org/whats-on/events/sunday-science-20-march/")
                 .addColumn("title", "Sunday Science 2016")
                 .addColumn("description", "Join us for a fun-filled day of non-stop shows and hands-on workshops for all the family.")
@@ -122,7 +125,8 @@ class FetcherServiceTest extends FetcherTest {
                 .addColumn("url", "http://www.cambridgesciencecentre.org/whats-on/events/sunday-science-20-march/")
                 .addColumn("venue", "Cambridge Science Centre, 18 Jesus Lane, Cambridge, CB5 8BQ")
                 .addColumn("from", "2016-03-20T10:00:00")
-                .addColumn("to", "2016-03-20T17:00:00"))
+                .addColumn("to", "2016-03-20T17:00:00")
+                .addColumn("category", "family"))
             .addRow(DataRowBuilder().setRowId("http://www.cambridgesciencecentre.org/whats-on/events/february-half-term-2016/")
                 .addColumn("title", "Half Term 13th-21st February 10-5")
                 .addColumn("description", "Engineers from Airbus Defence and Space will be with over weekend, 13/14th February, to talk to you about engineering spacecraft and rovers to explore other planets. Get hands on with the technology, become a clean room engineer and join in some fun workshop activities.")
@@ -130,7 +134,8 @@ class FetcherServiceTest extends FetcherTest {
                 .addColumn("image", "http://www.cambridgesciencecentre.org/media/assets/3a/d78141bc0cc3f96d175843c2cd0e97beb9c370.jpg")
                 .addColumn("url", "http://www.cambridgesciencecentre.org/whats-on/events/february-half-term-2016/")
                 .addColumn("venue", "Cambridge Science Centre, 18 Jesus Lane, Cambridge, CB5 8BQ")
-                .addColumn("from", "2016-02-13T10:00:00"))
+                .addColumn("from", "2016-02-13T10:00:00")
+                .addColumn("category", "family"))
             .addRow(DataRowBuilder().setRowId("http://www.cambridgesciencecentre.org/whats-on/events/electric-universe/")
                 .addColumn("title", "Electric Universe")
                 .addColumn("description", "Join us for a unique and controversial tour of the Universe. This talk follows contemporary speculation into the role that electro-dynamics plays in forming the objects we see in modern astronomy.")
@@ -139,7 +144,8 @@ class FetcherServiceTest extends FetcherTest {
                 .addColumn("url", "http://www.cambridgesciencecentre.org/whats-on/events/electric-universe/")
                 .addColumn("venue", "Cambridge Science Centre, 18 Jesus Lane, Cambridge, CB5 8BQ")
                 .addColumn("from", "2016-02-16T19:00:00")
-                .addColumn("to", "2016-02-16T21:00:00"))
+                .addColumn("to", "2016-02-16T21:00:00")
+                .addColumn("category", "family"))
             .build()
     }
 }

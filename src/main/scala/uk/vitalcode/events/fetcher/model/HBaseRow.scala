@@ -7,15 +7,15 @@ import org.apache.hadoop.hbase.client.Result
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable
 import uk.vitalcode.events.fetcher.service.PropertyService
 import uk.vitalcode.events.model.{Page, Prop, PropType}
-import uk.vitalcode.events.fetcher.utils.HBaseUtil.getColumnValue
+import uk.vitalcode.events.fetcher.utils.HBaseUtil.getValueString
 
 class HBaseRow(url: String, data: String, mineType: String, pageId: String, fields: Map[String, Seq[String]] = Map()) extends Serializable {
 
     def this(row: (ImmutableBytesWritable, Result)) = this(
-        getColumnValue(row._2, "metadata", "url"),
-        getColumnValue(row._2, "content", "data"),
-        getColumnValue(row._2, "metadata", "mineType"),
-        getColumnValue(row._2, "metadata", "pageId")
+        getValueString(row._2, "metadata", "url"),
+        getValueString(row._2, "content", "data"),
+        getValueString(row._2, "metadata", "mineType"),
+        getValueString(row._2, "metadata", "pageId")
     )
 
     def fetchPropertyValues(page: Page): Seq[(String, Any)] = {

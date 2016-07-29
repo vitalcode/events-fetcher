@@ -13,7 +13,7 @@ class ClientVisitCambridgeTest extends FetcherTest {
         "fetching data from visit cambridge web site" when {
             "building event record from description event pages only" should {
                 "fetch all expected property values" in {
-                    FetcherService.fetchPages(Set[Page](cambridge.VisitCambridge.page), sc, hBaseConf, esIndex, esType)
+                    FetcherService.fetchPages(Set[Page](cambridge.VisitCambridge.page), sc, hBaseConf, pageTable, eventTable, esIndex, esType)
                     val actual = esData()
                     val expected = expectedEsDataDescription()
                     actual shouldBe expected
