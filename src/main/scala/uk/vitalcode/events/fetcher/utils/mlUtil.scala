@@ -1,21 +1,19 @@
 package uk.vitalcode.events.fetcher.utils
 
-import java.io.{InputStream, StringReader}
+import java.io.StringReader
 
 import org.apache.lucene.analysis.en.EnglishAnalyzer
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute
 import org.apache.lucene.analysis.{Analyzer, TokenStream}
-import org.apache.spark.SparkContext
-import org.apache.spark.ml.{Pipeline, PipelineModel}
 import org.apache.spark.ml.classification.NaiveBayes
 import org.apache.spark.ml.feature.{HashingTF, IDF, Tokenizer}
+import org.apache.spark.ml.{Pipeline, PipelineModel}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{Row, SQLContext}
-
-import scala.collection.mutable.ListBuffer
 import uk.vitalcode.events.model.Category
 import uk.vitalcode.events.model.Category.Category
 
+import scala.collection.mutable.ListBuffer
 import scala.reflect.io.Path
 
 object MLUtil {
@@ -37,13 +35,12 @@ object MLUtil {
         }
     }
 
-    def predictEventCategory(sc: SparkContext, text: String): Category = {
+    def predictEventCategory(sqlContext: SQLContext, text: String): Category = {
 
-        val sqlContext = SQLContextSingleton.getInstance(sc)
         import sqlContext.implicits._
 
-        val dfTest = sc.parallelize(Seq((0, text))).toDF
-        val label = Model.getInstance(sc).transform(dfTest)
+        val dfTest = sqlContext.sparkContext.parallelize(Seq((0, text))).toDF
+        val label = getEventCategoryModel(sqlContext).transform(dfTest)
             .select("prediction")
             .map { case Row(p: Double) => p }
             .collect()
@@ -51,27 +48,20 @@ object MLUtil {
 
         Category(label)
     }
-}
 
-object Model {
-
-    @transient
-    private var instance: PipelineModel = _
-
-    def getInstance(sparkContext: SparkContext): PipelineModel = {
-        if (instance == null) {
-            instance = buildModel(sparkContext)
+    def getEventCategoryModel(sqlContext: SQLContext): PipelineModel = {
+        if (eventCategoryModel == null) {
+            eventCategoryModel = buildEventCategoryModel(sqlContext)
         }
-        instance
+        eventCategoryModel
     }
 
-    private def buildModel(sc: SparkContext): PipelineModel = {
+    private def buildEventCategoryModel(sqlContext: SQLContext): PipelineModel = {
 
-        val sqlContext = SQLContextSingleton.getInstance(sc)
         import sqlContext.implicits._
 
         val trainPath = Path(this.getClass.getResource("/").getPath)./("EventCategoryTrain/*").toString()
-        val trainRDD: RDD[(String, String)] = sc.wholeTextFiles(trainPath)
+        val trainRDD: RDD[(String, String)] = sqlContext.sparkContext.wholeTextFiles(trainPath)
         val data = trainRDD.map {
             case (file, text) => (Category.withName(file.split("/").takeRight(2).head.toUpperCase).id.toDouble, text)
         }.toDF
@@ -84,19 +74,9 @@ object Model {
 
         pipeline.fit(data)
     }
+
+    private var eventCategoryModel: PipelineModel = _
 }
 
-object SQLContextSingleton {
-
-    @transient
-    private var instance: SQLContext = _
-
-    def getInstance(sparkContext: SparkContext): SQLContext = {
-        if (instance == null) {
-            instance = new SQLContext(sparkContext)
-        }
-        instance
-    }
-}
 
 

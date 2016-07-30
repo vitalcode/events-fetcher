@@ -15,8 +15,8 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{Row, SQLContext}
 import uk.vitalcode.events.fetcher.common.Log
 import uk.vitalcode.events.fetcher.model.PageTableRow
+import uk.vitalcode.events.fetcher.utils.{HBaseUtil, MLUtil}
 import uk.vitalcode.events.fetcher.utils.HBaseUtil.getValueString
-import uk.vitalcode.events.fetcher.utils.{HBaseUtil, Model}
 import uk.vitalcode.events.model.{Category, Page}
 
 import scala.collection.JavaConversions.asScalaBuffer
@@ -71,7 +71,7 @@ object FetcherService extends Serializable with Log {
         }
         val dfTest = sqlContext.createDataFrame(rddTest)
 
-        Model.getInstance(sc).transform(dfTest)
+        MLUtil.getEventCategoryModel(sqlContext).transform(dfTest)
             .select("_1", "prediction")
             .map {
                 case Row(_1: String, p: Double) => {
