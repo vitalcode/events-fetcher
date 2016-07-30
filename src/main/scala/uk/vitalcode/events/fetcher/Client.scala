@@ -36,8 +36,6 @@ object Client {
         val pageTable = AppConfig.pageTable
         val eventTable = AppConfig.eventTable
 
-        val pages = Pages.all
-
-        pages.foreach(p => FetcherService.fetchPages(Set[Page](p), sc, hBaseConf, pageTable, testIndex, eventTable, testType))
+        FetcherService.fetchPages(Pages.all, sc, hBaseConf, pageTable, testIndex, eventTable, testType)
     }
 }

@@ -9,13 +9,13 @@ import uk.vitalcode.events.fetcher.service.PropertyService
 import uk.vitalcode.events.model.{Page, Prop, PropType}
 import uk.vitalcode.events.fetcher.utils.HBaseUtil.getValueString
 
-class HBaseRow(url: String, data: String, mineType: String, pageId: String, fields: Map[String, Seq[String]] = Map()) extends Serializable {
+class PageTableRow(url: String, data: String, mineType: String, pageId: String) extends Serializable {
 
-    def this(row: (ImmutableBytesWritable, Result)) = this(
-        getValueString(row._2, "metadata", "url"),
-        getValueString(row._2, "content", "data"),
-        getValueString(row._2, "metadata", "mineType"),
-        getValueString(row._2, "metadata", "pageId")
+    def this(row: Result) = this(
+        getValueString(row, "metadata", "url"),
+        getValueString(row, "content", "data"),
+        getValueString(row, "metadata", "mineType"),
+        getValueString(row, "metadata", "pageId")
     )
 
     def fetchPropertyValues(page: Page): Seq[(String, Any)] = {
@@ -42,7 +42,6 @@ class HBaseRow(url: String, data: String, mineType: String, pageId: String, fiel
                 case _ => props.foreach(prop => propertyValues = propertyValues :+(prop.name, url))
             }
         })
-        //if (propertyValues.nonEmpty) Some(propertyValues) else None
         propertyValues
     }
 
@@ -56,6 +55,6 @@ class HBaseRow(url: String, data: String, mineType: String, pageId: String, fiel
     }
 }
 
-object HBaseRow {
-    def apply(row: (ImmutableBytesWritable, Result)) = new HBaseRow(row)
+object PageTableRow {
+    def apply(row: Result) = new PageTableRow(row)
 }

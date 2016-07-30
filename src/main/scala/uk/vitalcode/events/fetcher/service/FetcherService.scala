@@ -14,7 +14,7 @@ import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{Row, SQLContext}
 import uk.vitalcode.events.fetcher.common.Log
-import uk.vitalcode.events.fetcher.model.HBaseRow
+import uk.vitalcode.events.fetcher.model.PageTableRow
 import uk.vitalcode.events.fetcher.utils.HBaseUtil.getValueString
 import uk.vitalcode.events.fetcher.utils.{HBaseUtil, Model}
 import uk.vitalcode.events.model.{Category, Page}
@@ -22,13 +22,6 @@ import uk.vitalcode.events.model.{Category, Page}
 import scala.collection.JavaConversions.asScalaBuffer
 
 object FetcherService extends Serializable with Log {
-
-    private def createRDDFromTable(sc: SparkContext, hBaseConf: Configuration, table: String) = {
-        hBaseConf.set(TableInputFormat.INPUT_TABLE, table)
-        sc.newAPIHadoopRDD(hBaseConf, classOf[TableInputFormat],
-            classOf[org.apache.hadoop.hbase.io.ImmutableBytesWritable],
-            classOf[org.apache.hadoop.hbase.client.Result])
-    }
 
     def fetchPages(pages: Set[Page], sc: SparkContext, hBaseConf: Configuration, pageTable: String, eventTable: String,
                    esIndex: String, esType: String): Unit = {
@@ -38,26 +31,23 @@ object FetcherService extends Serializable with Log {
         buildIndex(sc, hBaseConf, eventTable, esIndex, esType)
     }
 
-    def fetchEvents(pages: Set[Page], sc: SparkContext, hBaseConf: Configuration, inputTable: String, outputTable: String) = {
-        val rdd = createRDDFromTable(sc, hBaseConf, inputTable)
-        val jobConfig: JobConf = new JobConf(hBaseConf, this.getClass)
-        jobConfig.setOutputFormat(classOf[TableOutputFormat])
-        jobConfig.set(TableOutputFormat.OUTPUT_TABLE, outputTable)
+    def fetchEvents(pages: Set[Page], sc: SparkContext, hBaseConf: Configuration, pageTable: String, eventTable: String) = {
+        val rdd = createRDDFromTable(sc, hBaseConf, pageTable)
+        val jobConfig: JobConf = createJobConfig(hBaseConf, eventTable)
 
         pages.foreach(page => {
-            rdd.map(row => (getIndexId(row), HBaseRow(row)))
+            rdd.map {
+                case (key: ImmutableBytesWritable, row: Result) =>
+                    (getValueString(row, "metadata", "indexId"), PageTableRow(row))
+            }
                 .mapValues(_.fetchPropertyValues(page))
                 .filter(_._2.nonEmpty)
                 .reduceByKey((x, y) => x ++: y)
-                .mapValues(_.groupBy(_._1)
-                    .map {
-                        case (prop, value) => (prop, value.map(_._2).toList)
-                    }
-                )
-                .map(r => {
-                    val rowKey = Bytes.toBytes(r._1)
+                .mapValues(_.groupBy(_._1).mapValues(_.map(_._2)))
+                .map(row => {
+                    val rowKey = Bytes.toBytes(row._1)
                     val put = new Put(rowKey)
-                    r._2.foreach {
+                    row._2.foreach {
                         case (prop, value) => {
                             put.addColumn(Bytes.toBytes("prop"), Bytes.toBytes(prop), HBaseUtil.objectToBytes(value))
                         }
@@ -69,29 +59,26 @@ object FetcherService extends Serializable with Log {
     }
 
     def categorizeEvents(sc: SparkContext, hBaseConf: Configuration, eventTable: String) = {
-
-
-        val rdd = createRDDFromTable(sc, hBaseConf, eventTable)
-        val jobConfig: JobConf = new JobConf(hBaseConf, this.getClass)
-        jobConfig.setOutputFormat(classOf[TableOutputFormat])
-        jobConfig.set(TableOutputFormat.OUTPUT_TABLE, eventTable)
-
-        val gg: RDD[(String, String)] = rdd.map(row => {
-            (Bytes.toString(row._1.get()), HBaseUtil.getValueObject[List[String]](row._2, "prop", "description").mkString(" "))
-        })
-
-
         val sqlContext = new SQLContext(sc)
-        val dfTest = sqlContext.createDataFrame(gg)
+        val rdd = createRDDFromTable(sc, hBaseConf, eventTable)
+        val jobConfig: JobConf = createJobConfig(hBaseConf, eventTable)
 
-        val label = Model.getInstance(sc).transform(dfTest)
+        val rddTest: RDD[(String, String)] = rdd.map {
+            case (key, value) =>
+                (Bytes.toString(key.get()),
+                    (HBaseUtil.getValueObject[Seq[String]](value, "prop", "title") ++
+                        HBaseUtil.getValueObject[Seq[String]](value, "prop", "description")).mkString(" "))
+        }
+        val dfTest = sqlContext.createDataFrame(rddTest)
 
-        label.select("_1", "prediction")
+        Model.getInstance(sc).transform(dfTest)
+            .select("_1", "prediction")
             .map {
                 case Row(_1: String, p: Double) => {
                     val rowKey = Bytes.toBytes(_1)
                     val put = new Put(rowKey)
-                    put.addColumn(Bytes.toBytes("prop"), Bytes.toBytes("category"), HBaseUtil.objectToBytes(List(Category(p.toInt).toString.toLowerCase())))
+                    put.addColumn(Bytes.toBytes("prop"), Bytes.toBytes("category"),
+                        HBaseUtil.objectToBytes(List(Category(p.toInt).toString.toLowerCase())))
                     (new ImmutableBytesWritable(rowKey), put)
                 }
             }
@@ -99,37 +86,43 @@ object FetcherService extends Serializable with Log {
     }
 
     def buildIndex(sc: SparkContext, hBaseConf: Configuration, eventTable: String, esIndex: String, esType: String): Unit = {
-
         import org.elasticsearch.spark._
-
         val rdd = createRDDFromTable(sc, hBaseConf, eventTable)
         val esResource = s"$esIndex/$esType"
 
-        rdd.mapValues(value =>
-            asScalaBuffer(value.listCells()).map(cell => {
+        rdd.mapValues(data =>
+            asScalaBuffer(data.listCells()).map(cell => {
                 val column: String = new String(CellUtil.cloneQualifier(cell))
-                val value2: Seq[Any] = HBaseUtil.bytesToObject[Seq[Any]](CellUtil.cloneValue(cell))
-                (column, value2)
+                val value: Seq[Any] = HBaseUtil.bytesToObject[Seq[Any]](CellUtil.cloneValue(cell))
+                (column, value)
             }).toMap
-        )
-            .flatMapValues(p => p
-                .filter(_._1 == "when")
-                .flatMap(_._2)
-                .map {
-                    case w: Vector[_] => {
-                        if (w(1) != None) {
-                            p +("from" -> List(w(0)), "to" -> List(w(1))) - "when"
-                        } else {
-                            p + ("from" -> List(w(0))) - "when"
-                        }
+        ).flatMapValues(p => p
+            .filter(_._1 == "when")
+            .flatMap(_._2)
+            .map {
+                case w: Vector[_] => {
+                    if (w(1) != None) {
+                        p +("from" -> List(w(0)), "to" -> List(w(1))) - "when"
+                    } else {
+                        p + ("from" -> List(w(0))) - "when"
                     }
                 }
-            )
-            .map(d => d._2 + ("url" -> List(Bytes.toString(d._1.get()))))
+            }
+        ).map(d => d._2 + ("url" -> List(Bytes.toString(d._1.get()))))
             .saveToEs(esResource)
     }
 
-    private def getIndexId(row: (ImmutableBytesWritable, Result)): String = {
-        getValueString(row._2, "metadata", "indexId")
+    private def createRDDFromTable(sc: SparkContext, hBaseConf: Configuration, table: String): RDD[(ImmutableBytesWritable, Result)] = {
+        hBaseConf.set(TableInputFormat.INPUT_TABLE, table)
+        sc.newAPIHadoopRDD(hBaseConf, classOf[TableInputFormat],
+            classOf[org.apache.hadoop.hbase.io.ImmutableBytesWritable],
+            classOf[org.apache.hadoop.hbase.client.Result])
+    }
+
+    private def createJobConfig(hBaseConf: Configuration, outputTable: String): JobConf = {
+        val jobConfig: JobConf = new JobConf(hBaseConf, this.getClass)
+        jobConfig.setOutputFormat(classOf[TableOutputFormat])
+        jobConfig.set(TableOutputFormat.OUTPUT_TABLE, outputTable)
+        jobConfig
     }
 }
