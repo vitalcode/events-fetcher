@@ -60,9 +60,7 @@ object MLUtil {
 
         import sqlContext.implicits._
 
-        val trainPath = Path(this.getClass.getProtectionDomain.getCodeSource.getLocation.getPath) / "EventCategoryTrain/*"
-
-        //val trainPath = Path(this.getClass.getResource("/").getPath)./("EventCategoryTrain/*").toString()
+        val trainPath = Path(MLUtil.getClass.getResource("/").getPath)./("EventCategoryTrain/*").toString()
         val trainRDD: RDD[(String, String)] = sqlContext.sparkContext.wholeTextFiles(trainPath.toString)
         val data = trainRDD.map {
             case (file, text) => (Category.withName(file.split("/").takeRight(2).head.toUpperCase).id.toDouble, text)
