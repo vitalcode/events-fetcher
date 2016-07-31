@@ -80,7 +80,7 @@ object MLUtil {
                // if (entry.getName.matches("""\/EventCategoryTrain\/[^\/]*\/[^\/]*$""")) {
                     val inputStream = jarFile.getInputStream(entry)
                     val writer: StringWriter = new StringWriter()
-                    IOUtils.copy(inputStream, writer, "UTF")
+                    IOUtils.copy(inputStream, writer, "UTF-8")
                     val theString = writer.toString
 
                     System.out.println(s"${entry.getName} - $theString")
