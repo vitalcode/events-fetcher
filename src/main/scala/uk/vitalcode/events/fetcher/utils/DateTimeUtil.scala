@@ -2,6 +2,8 @@ package uk.vitalcode.events.fetcher.utils
 
 import java.time.{DayOfWeek, LocalDate}
 
+import scala.util.Try
+
 object DateTimeUtil {
 
     def datesInRange(fromDate: LocalDate, toDate: LocalDate, daysOfWeek: Set[DayOfWeek] = Set(), dates: Set[LocalDate] = Set()): Set[LocalDate] = {
@@ -12,5 +14,9 @@ object DateTimeUtil {
                 else dates
             )
         }
+    }
+
+    def tryCreateLocalDate(year: Int, month: Int, dayOfMonth: Int): Try[LocalDate] = {
+        Try(LocalDate.of(year, month, dayOfMonth))
     }
 }

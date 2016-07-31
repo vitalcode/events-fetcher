@@ -1,11 +1,15 @@
 package uk.vitalcode.events.fetcher.parser.dateParser
 
+import java.io.Serializable
 import java.time._
 import java.time.format.DateTimeFormatter
 
 import uk.vitalcode.events.fetcher.common.Log
 import uk.vitalcode.events.fetcher.parser.ParserLike
+import uk.vitalcode.events.fetcher.utils.DateTimeUtil
 import uk.vitalcode.events.model.Prop
+
+import scala.util.{Success, Try}
 
 object DateParser extends ParserLike[(String, Option[String])] with Log {
 
@@ -46,10 +50,11 @@ object DateParser extends ParserLike[(String, Option[String])] with Log {
                     val dayOfMonth = g.find(ty => ty.isInstanceOf[DayOfMonthToken]).map(ty => ty.asInstanceOf[DayOfMonthToken])
                     val range = g.exists(ty => ty.isInstanceOf[RangeToken])
                     if (month.nonEmpty && dayOfMonth.nonEmpty && !range) {
-                        Vector(DateToken(LocalDate.of(
+                        val date = DateTimeUtil.tryCreateLocalDate(
                             if (year.isEmpty) LocalDateTime.now().getYear else year.get.value,
                             month.get.value,
-                            dayOfMonth.get.value)))
+                            dayOfMonth.get.value)
+                        if (date.isSuccess) Vector(DateToken(date.get)) else g
                     } else g
                 })
                 .filter(d => d.isInstanceOf[DateToken])
