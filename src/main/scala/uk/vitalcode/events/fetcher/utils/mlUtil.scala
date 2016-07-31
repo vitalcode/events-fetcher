@@ -81,7 +81,7 @@ object MLUtil {
                 }
             }
             jarFile.close()
-            trainRDD = sqlContext.sparkContext.parallelize(categories)
+            trainRDD = sqlContext.sparkContext.parallelize(categories.toList)
 
         } else {
             val trainPath = Path(MLUtil.getClass.getResource("/").getPath) / "EventCategoryTrain/*"
