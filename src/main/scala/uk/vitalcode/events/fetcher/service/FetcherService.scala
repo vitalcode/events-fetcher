@@ -66,8 +66,8 @@ object FetcherService extends Serializable with Log {
         val rddTest: RDD[(String, String)] = rdd.map {
             case (key, value) =>
                 (Bytes.toString(key.get()),
-                    (HBaseUtil.getValueObject[Seq[String]](value, "prop", "title") ++
-                        HBaseUtil.getValueObject[Seq[String]](value, "prop", "description")).mkString(" "))
+                    (HBaseUtil.getValueObject[Seq[String]](value, "prop", "title").getOrElse(Seq()) ++
+                        HBaseUtil.getValueObject[Seq[String]](value, "prop", "description").getOrElse(Seq())).mkString(" "))
         }
         val dfTest = sqlContext.createDataFrame(rddTest)
 

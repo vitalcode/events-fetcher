@@ -10,8 +10,9 @@ object HBaseUtil {
         Bytes.toString(result.getValue(Bytes.toBytes(family), Bytes.toBytes(column)))
     }
 
-    def getValueObject[T](result: Result, family: String, column: String): T = {
-        bytesToObject(result.getValue(Bytes.toBytes(family), Bytes.toBytes(column))).asInstanceOf[T]
+    def getValueObject[T](result: Result, family: String, column: String): Option[T] = {
+        val bytes = result.getValue(Bytes.toBytes(family), Bytes.toBytes(column))
+        if (bytes != null) Some(bytesToObject(bytes).asInstanceOf[T]) else None
     }
 
     def bytesToObject[T](bytes: Array[Byte]): T = {
