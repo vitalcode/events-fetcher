@@ -77,14 +77,14 @@ object MLUtil {
             val entries = jarFile.entries()
             while(entries.hasMoreElements) {
                 val entry = entries.nextElement()
-                if (entry.getName.matches("""\/EventCategoryTrain\/[^\/]*\/[^\/]*$""")) {
+               // if (entry.getName.matches("""\/EventCategoryTrain\/[^\/]*\/[^\/]*$""")) {
                     val inputStream = jarFile.getInputStream(entry)
                     val writer: StringWriter = new StringWriter()
                     IOUtils.copy(inputStream, writer, "UTF")
                     val theString = writer.toString
 
                     System.out.println(s"${entry.getName} - $theString")
-                }
+               // }
             }
             jarFile.close()
 
