@@ -74,7 +74,9 @@ object MLUtil {
 
         if (jar.isFile) {
             val jarFile = new JarFile(jar)
-            for (entry: JarEntry <- jarFile.entries()) {
+            val entries = jarFile.entries()
+            while(entries.hasMoreElements) {
+                val entry = entries.nextElement()
                 if (entry.getName.matches("""\/EventCategoryTrain\/[^\/]*\/[^\/]*$""")) {
                     val inputStream = jarFile.getInputStream(entry)
                     val writer: StringWriter = new StringWriter()
