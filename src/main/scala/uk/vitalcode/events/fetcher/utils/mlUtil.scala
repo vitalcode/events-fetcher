@@ -85,7 +85,7 @@ object MLUtil {
                     IOUtils.copy(inputStream, writer, "UTF-8")
                     val theString = writer.toString
 
-                    map :+ ((entry.getName, theString))
+                    map :+ (entry.getName, theString)
                     System.out.println(s"${entry.getName} - $theString")
                }
             }
