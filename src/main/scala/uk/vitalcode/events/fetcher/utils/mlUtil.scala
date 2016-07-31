@@ -1,6 +1,8 @@
 package uk.vitalcode.events.fetcher.utils
 
-import java.io.StringReader
+import java.io.{File, StringReader}
+import java.net.{URISyntaxException, URL}
+import java.util.jar.JarFile
 
 import org.apache.lucene.analysis.en.EnglishAnalyzer
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute
@@ -61,11 +63,42 @@ object MLUtil {
         import sqlContext.implicits._
 
 
-        val tr = MLUtil.getClass.getResource("/")
+//        val tr = MLUtil.getClass.getResource("/EventCategoryTrain")
+//        val trainPath = s"${tr.getProtocol}:${tr.getPath}EventCategoryTrain/*"
+        //
+        //        Thread.currentThread.getContextClassLoader.getResource()
+        //
 
-        val trainPath = s"${tr.getProtocol}:${tr.getPath}EventCategoryTrain/*"
+        val jarFile: File = new File(MLUtil.getClass.getProtectionDomain.getCodeSource.getLocation.getPath)
 
-        //val trainPath = Path(MLUtil.getClass.getResource("/").getPath)./("EventCategoryTrain/*").toString()
+        if (jarFile.isFile) {
+            val jar = new JarFile(jarFile)
+            val entries = jar.entries()
+            while (entries.hasMoreElements) {
+                val name: String = entries.nextElement().getName
+                if (name.startsWith("EventCategoryTrain/")) {
+                    System.out.println(name)
+                }
+            }
+            jar.close()
+
+        } else {
+            val url: URL = MLUtil.getClass.getResource("/EventCategoryTrain")
+            if (url != null) {
+                try {
+                    val apps: File = new File(url.toURI)
+                    for (app <- apps.listFiles()) {
+                        System.out.println(app)
+                    }
+                } catch {
+                    case ex: URISyntaxException =>
+                    // never happens
+                }
+            }
+        }
+
+
+        val trainPath = Path(MLUtil.getClass.getResource("/").getPath)./("EventCategoryTrain/*").toString()
         val trainRDD: RDD[(String, String)] = sqlContext.sparkContext.wholeTextFiles(trainPath)
         val data = trainRDD.map {
             case (file, text) => (Category.withName(file.split("/").takeRight(2).head.toUpperCase).id.toDouble, text)
@@ -81,6 +114,7 @@ object MLUtil {
     }
 
     private var eventCategoryModel: PipelineModel = _
+
 }
 
 
