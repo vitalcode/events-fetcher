@@ -76,7 +76,7 @@ object MLUtil {
             val entries = jar.entries()
             while (entries.hasMoreElements) {
                 val name: String = entries.nextElement().getName
-                if (name.startsWith("EventCategoryTrain/")) {
+                if (name.startsWith("EventCategoryTrain/*")) {
                     System.out.println(name)
                 }
             }
