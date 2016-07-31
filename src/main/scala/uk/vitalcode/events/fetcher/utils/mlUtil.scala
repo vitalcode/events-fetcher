@@ -64,37 +64,28 @@ object MLUtil {
         import sqlContext.implicits._
 
         var trainRDD: RDD[(String, String)] = null
-
-        //        val tr = MLUtil.getClass.getResource("/EventCategoryTrain")
-        //        val trainPath = s"${tr.getProtocol}:${tr.getPath}EventCategoryTrain/*"
-        //
-        //        Thread.currentThread.getContextClassLoader.getResource()
-        //
-
         val jar: File = new File(MLUtil.getClass.getProtectionDomain.getCodeSource.getLocation.getPath)
 
         if (jar.isFile) {
-            val map = Seq.empty[(String, String)]
+            val categories = ListBuffer.empty[(String, String)]
             val jarFile = new JarFile(jar)
             val entries = jarFile.entries()
-            while(entries.hasMoreElements) {
+            while (entries.hasMoreElements) {
                 val entry = entries.nextElement()
-               if (entry.getName.matches("""EventCategoryTrain\/[^\/]+\/[^\/]+$""")) {
+                if (entry.getName.matches("""EventCategoryTrain\/[^\/]+\/[^\/]+$""")) {
                     val inputStream = jarFile.getInputStream(entry)
                     val writer: StringWriter = new StringWriter()
                     IOUtils.copy(inputStream, writer, "UTF-8")
                     val theString = writer.toString
-
-                    map :+ (entry.getName, theString)
-                    System.out.println(s"${entry.getName} - $theString")
-               }
+                    categories += ((entry.getName, theString))
+                }
             }
             jarFile.close()
-            trainRDD = sqlContext.sparkContext.parallelize(map)
+            trainRDD = sqlContext.sparkContext.parallelize(categories)
 
         } else {
-            val trainPath = Path(MLUtil.getClass.getResource("/").getPath)./("EventCategoryTrain/*").toString()
-            trainRDD = sqlContext.sparkContext.wholeTextFiles(trainPath)
+            val trainPath = Path(MLUtil.getClass.getResource("/").getPath) / "EventCategoryTrain/*"
+            trainRDD = sqlContext.sparkContext.wholeTextFiles(trainPath.toString())
         }
 
         val data = trainRDD.map {
