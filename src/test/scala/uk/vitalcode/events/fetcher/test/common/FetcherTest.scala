@@ -114,7 +114,6 @@ trait FetcherTest extends WordSpec with ShouldMatchers with BeforeAndAfterEach w
 
         hBaseConf = HBaseConfiguration.create()
         hBaseConf.set(HConstants.ZOOKEEPER_QUORUM, TestConfig.hbaseZookeeperQuorum)
-//        hBaseConf.set(TableInputFormat.INPUT_TABLE, Bytes.toString(testTable.getName))
         hBaseConn = ConnectionFactory.createConnection(hBaseConf)
 
         prepareTestData()
