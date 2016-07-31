@@ -1,9 +1,10 @@
 package uk.vitalcode.events.fetcher.utils
 
-import java.io.{File, StringReader}
+import java.io.{File, StringReader, StringWriter}
 import java.net.{URISyntaxException, URL}
-import java.util.jar.JarFile
+import java.util.jar.{JarEntry, JarFile}
 
+import org.apache.commons.io.IOUtils
 import org.apache.lucene.analysis.en.EnglishAnalyzer
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute
 import org.apache.lucene.analysis.{Analyzer, TokenStream}
@@ -63,24 +64,27 @@ object MLUtil {
         import sqlContext.implicits._
 
 
-//        val tr = MLUtil.getClass.getResource("/EventCategoryTrain")
-//        val trainPath = s"${tr.getProtocol}:${tr.getPath}EventCategoryTrain/*"
+        //        val tr = MLUtil.getClass.getResource("/EventCategoryTrain")
+        //        val trainPath = s"${tr.getProtocol}:${tr.getPath}EventCategoryTrain/*"
         //
         //        Thread.currentThread.getContextClassLoader.getResource()
         //
 
-        val jarFile: File = new File(MLUtil.getClass.getProtectionDomain.getCodeSource.getLocation.getPath)
+        val jar: File = new File(MLUtil.getClass.getProtectionDomain.getCodeSource.getLocation.getPath)
 
-        if (jarFile.isFile) {
-            val jar = new JarFile(jarFile)
-            val entries = jar.entries()
-            while (entries.hasMoreElements) {
-                val name: String = entries.nextElement().getName
-                if (name.startsWith("EventCategoryTrain/*")) {
-                    System.out.println(name)
+        if (jar.isFile) {
+            val jarFile = new JarFile(jar)
+            for (entry: JarEntry <- jarFile.entries()) {
+                if (entry.getName.matches("""\/EventCategoryTrain\/[^\/]*\/[^\/]*$""")) {
+                    val inputStream = jarFile.getInputStream(entry)
+                    val writer: StringWriter = new StringWriter()
+                    IOUtils.copy(inputStream, writer, "UTF")
+                    val theString = writer.toString
+
+                    System.out.println(s"${entry.getName} - $theString")
                 }
             }
-            jar.close()
+            jarFile.close()
 
         } else {
             val url: URL = MLUtil.getClass.getResource("/EventCategoryTrain")
