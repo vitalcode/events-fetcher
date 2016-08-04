@@ -1,8 +1,7 @@
 package uk.vitalcode.events.fetcher.utils
 
 import java.io.{File, StringReader, StringWriter}
-import java.net.{URISyntaxException, URL}
-import java.util.jar.{JarEntry, JarFile}
+import java.util.jar.JarFile
 
 import org.apache.commons.io.IOUtils
 import org.apache.lucene.analysis.en.EnglishAnalyzer
@@ -20,6 +19,8 @@ import scala.collection.mutable.ListBuffer
 import scala.reflect.io.Path
 
 object MLUtil {
+
+    private var eventCategoryModel: PipelineModel = _
 
     def analyzeTokens(text: String): Seq[String] = {
         val result = ListBuffer.empty[String]
@@ -39,16 +40,13 @@ object MLUtil {
     }
 
     def predictEventCategory(sqlContext: SQLContext, text: String): Category = {
-
         import sqlContext.implicits._
-
         val dfTest = sqlContext.sparkContext.parallelize(Seq((0, text))).toDF
         val label = getEventCategoryModel(sqlContext).transform(dfTest)
             .select("prediction")
             .map { case Row(p: Double) => p }
             .collect()
             .head.toInt
-
         Category(label)
     }
 
@@ -60,9 +58,7 @@ object MLUtil {
     }
 
     private def buildEventCategoryModel(sqlContext: SQLContext): PipelineModel = {
-
         import sqlContext.implicits._
-
         var trainRDD: RDD[(String, String)] = null
         val jar: File = new File(MLUtil.getClass.getProtectionDomain.getCodeSource.getLocation.getPath)
 
@@ -100,9 +96,6 @@ object MLUtil {
 
         pipeline.fit(data)
     }
-
-    private var eventCategoryModel: PipelineModel = _
-
 }
 
 
