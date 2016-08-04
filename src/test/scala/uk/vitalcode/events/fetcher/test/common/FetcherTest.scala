@@ -6,7 +6,6 @@ import org.apache.commons.codec.digest.DigestUtils
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.hbase._
 import org.apache.hadoop.hbase.client._
-import org.apache.hadoop.hbase.mapreduce.TableInputFormat
 import org.apache.hadoop.hbase.util.Bytes
 import org.apache.spark.{SparkConf, SparkContext}
 import org.elasticsearch.spark._

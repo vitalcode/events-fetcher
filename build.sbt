@@ -64,8 +64,6 @@ libraryDependencies ++= {
         "vitalcode" %% "events-model" % eventsModelV
     )
 }
-//
-//enablePlugins(JavaAppPackaging)
 
 assemblyMergeStrategy in assembly := {
     case PathList("reference.conf") => MergeStrategy.concat
