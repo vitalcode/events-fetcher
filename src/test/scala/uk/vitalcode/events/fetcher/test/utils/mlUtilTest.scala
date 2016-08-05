@@ -1,8 +1,11 @@
 package uk.vitalcode.events.fetcher.test.utils
 
+import java.util.Locale
+
 import org.apache.spark.sql.SQLContext
 import org.apache.spark.{SparkConf, SparkContext}
 import org.scalatest._
+import org.scalatest.matchers.{MatchResult, Matcher}
 import uk.vitalcode.events.fetcher.test.common.TestConfig
 import uk.vitalcode.events.fetcher.utils.MLUtil
 import uk.vitalcode.events.model.Category
@@ -15,16 +18,16 @@ class MLUtilTest extends WordSpec with ShouldMatchers with BeforeAndAfterEach {
     "Event prediction model" when {
         "train using predefined train data" should {
             "correctly predict [music] category" in {
-                shouldPredict("music", Category.MUSIC)
-                shouldPredict("junction-juliette_burton", Category.MUSIC)
-                //shouldPredict("cce-music-big_girls_dont_cry", Category.MUSIC)
+                "music" / "music" should be(Category.MUSIC)
+                "music" / "junction-juliette_burton" should be(Category.MUSIC)
+                //"music" / "cce-music-big_girls_dont_cry" should be(Category.MUSIC)
             }
             "correctly predict [family] category" in {
-                shouldPredict("fwm-family-art-week", Category.FAMILY)
-                shouldPredict("cce-comedy-jimmy_carr", Category.FAMILY)
+                "family" / "fwm-family-art-week" should be(Category.FAMILY)
+                "family" / "cce-comedy-jimmy_carr" should be(Category.FAMILY)
             }
             "correctly predict [museum] category" in {
-                //shouldPredict("fwm-guided-tour", Category.MUSEUM)
+                //"museum" / "fwm-guided-tour" should be(Category.MUSEUM)
             }
         }
     }
@@ -32,13 +35,21 @@ class MLUtilTest extends WordSpec with ShouldMatchers with BeforeAndAfterEach {
     private var sqlContext: SQLContext = _
     private var sc: SparkContext = _
 
-    private def shouldPredict(path: String, expectation: Category) = {
-        MLUtil.predictEventCategory(sqlContext, getEventText(path)) shouldBe expectation
+    implicit def stringToPath(str: String): Path = Path(str)
+
+    private def be(right: Category): Matcher[Path] = new Matcher[Path] {
+        def apply(left: Path): MatchResult = {
+            val prediction = MLUtil.predictEventCategory(sqlContext, getEventText(left))
+            MatchResult(
+                prediction == right,
+                s"category [$prediction] for event path [${left.toString()}] was not predicted correctly as [$right]",
+                s"category for event path [${left.toString()}] predicted as [$right], but it shouldn't have"
+            )
+        }
     }
 
-
-    private def getEventText(path: String): String = {
-        val trainPath = Path(this.getClass.getResource("/").getPath) / s"EventCategoryTest/$path";
+    private def getEventText(path: Path): String = {
+        val trainPath = Path(this.getClass.getResource("/").getPath) / s"EventCategoryTest" / path
         Source.fromFile(trainPath.toString).getLines.mkString
     }
 
