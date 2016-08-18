@@ -1,0 +1,176 @@
+
+
+<!doctype html>
+<!--[if lt IE 7]> <html class="no-js ie6 oldie" lang="en"> <![endif]-->
+<!--[if IE 7]>    <html class="no-js ie7 oldie" lang="en"> <![endif]-->
+<!--[if IE 8]>    <html class="no-js ie8 oldie" lang="en"> <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en"> <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <title>ADC Theatre: What's On</title>
+  <meta name="description" content="">
+  <meta name="author" content="ADC Theatre">
+  <meta name="keywords" content="">
+  <meta name="viewport" content="width=device-width">
+  <link href="/css/reset.css" rel="stylesheet" />
+  <link href="/css/styles.css" rel="stylesheet" />
+  <link href="/css/layout.css" rel="stylesheet" />
+  <link href="/css/basket.css" rel="stylesheet" />
+  <link href="/css/multiBox.css" rel="stylesheet" />
+  <script src="/scripts/libs/modernizr.custom.31606.js" type="text/javascript"></script>
+  <script src="/scripts/libs/mootools-core-1.4.2-full-compat-yc.js" type="text/javascript"></script>
+  <script src="/scripts/libs/mootools-more-1.4.0.1.js" type="text/javascript"></script>
+  <script src="/scripts/libs/mooSelecta.js"></script>
+  <script src="/scripts/libs/qtabs.js"></script>
+  <script src="/scripts/libs/multibox.js"></script>
+  <script src="/scripts/libs/overlay.js"></script>
+
+  <!--<script src="/scripts/viewfromseat.js"></script>-->
+  <!--script src="/scripts/iframeresize.js"></script-->
+
+  <link href="/css/show.css" rel="stylesheet" />
+  <link href="/css/selectbox.css" rel="stylesheet" />
+  <script src="http://maps.googleapis.com/maps/api/js?sensor=true"> </script>
+  <script language="JavaScript" type="text/javascript">
+    function checkDate()
+    {
+      if (document.forms["proceed"]["bookTickets"].value == "" || document.forms["proceed"]["bookTickets"].value == null)
+      {
+        alert("Please select a date before continuing.");
+        return false;
+      }
+      else
+      {
+        return true;
+      }
+    }
+  </script>
+
+</head>
+<body class="adctheatre">
+<div id="fb-root"></div>
+<script>
+  (function(d, s, id) {
+    var js, fjs = d.getElementsByTagName(s)[0];
+    if (d.getElementById(id)) return;
+    js = d.createElement(s); js.id = id;
+    js.src = "//connect.facebook.net/en_GB/all.js#xfbml=1&appId=33348320992";
+    fjs.parentNode.insertBefore(js, fjs);
+  }(document, 'script', 'facebook-jssdk'));
+</script>
+<div id="container">
+  <header>
+    <nav id="topLinks"><ul><li class="corpusplayroom"><a href="http://www.corpusplayroom.com">corpus playroom</a></li><li class="adcticketing"><a href="http://www.adcticketing.com">adc ticketing</a></li></ul></nav>
+    <nav id="basketButton"><a href="/basket.aspx">my Basket</a></nav>
+    <form action="/search.aspx" class="search" method="get">
+      <input id="search" name="search" title="search" type="text" />
+      <input class="button" value="" type="submit" />
+    </form>
+    <h1 id="logo"><a href="/"></a></h1>
+  </header>
+  <div id="main">
+    <a href="https://www.adctheatre.com/my-account.aspx" id="myAccount">My Account</a>
+    <nav id="mainNav"><ul><li><a href="/">home</a></li><li><a href="/whats-on.aspx">what's on</a></li><li><a href="/blog.aspx">blog</a></li><li><a href="/your-visit.aspx">your visit</a><ul><li><a href="/your-visit/find-us.aspx">find us</a></li><li><a href="/your-visit/booking-information.aspx">booking information</a></li><li><a href="/your-visit/adc-bar.aspx">adc bar</a></li><li><a href="/your-visit/access.aspx">access</a></li><li><a href="/your-visit/post-show-discussions.aspx">post-show discussions</a></li><li><a href="/your-visit/education.aspx">education</a></li><li><a href="/your-visit/gift-vouchers.aspx">gift vouchers</a></li></ul></li><li><a href="/about-us.aspx">about us</a><ul><li><a href="/about-us/resident-companies.aspx">resident companies</a></li><li><a href="/about-us/alumni.aspx">alumni</a></li><li><a href="/about-us/history.aspx">history</a></li><li><a href="/about-us/administration.aspx">administration</a></li><li><a href="/about-us/vacancies.aspx">vacancies</a></li></ul></li><li><a href="/production.aspx">production</a><ul><li><a href="/production/technical-information.aspx">technical information</a></li><li><a href="/production/consumables.aspx">consumables</a></li><li><a href="/production/equipment-hire.aspx">equipment hire</a></li></ul></li><li><a href="/get-involved.aspx">get involved</a><ul><li><a href="/get-involved/acting.aspx">acting</a></li><li><a href="/get-involved/comedy.aspx">comedy</a></li><li><a href="/get-involved/directing.aspx">directing</a></li><li><a href="/get-involved/producing.aspx">producing</a></li><li><a href="/get-involved/new-writing.aspx">new writing</a></li><li><a href="/get-involved/technical.aspx">technical</a></li><li><a href="/get-involved/set-design.aspx">set design</a></li><li><a href="/get-involved/costume-design.aspx">costume design</a></li><li><a href="/get-involved/graphic-design.aspx">graphic design</a></li><li><a href="/get-involved/stewarding.aspx">stewarding</a></li><li><a href="/get-involved/programming.aspx">programming</a></li><li><a href="/get-involved/work-experience.aspx">work experience</a></li><li><a href="/get-involved/cumts-musical.aspx">cumts musical</a></li></ul></li><li><a href="/contact-us.aspx">contact us</a></li><li><a href="/support-us.aspx">support us</a><ul><li><a href="/support-us/adc-friends.aspx">adc friends</a></li></ul></li></ul><div class="cleaner"> </div></nav>
+    <iframe frameborder="0" height="0" width="0" id="websiteIdentity" src="http://www.adctheatre.com/website-identity.aspx?website=www.adctheatre.com"> </iframe>
+    <div class="cleaner">&nbsp;</div>
+
+    <section id="showInfoWrapper" style="background-image: url('/media/112832935/Made-in-Dagenham_Landscape.jpg');">
+      <article class="showInfo">
+        <p class="date">Thu 15 - Sat 17 September 2016</p>
+
+        <h1 class="white">Made in Dagenham</h1>
+        <p class="credit">Book by Richard Bean, Music by David Arnold and Lyrics by Richard Thomas</p>
+        <hr />
+        <hr /><h2 class="purple">book tickets</h2><form action="https://www.adctheatre.com/choose-seats.aspx" class="bookTickets" id="proceed" method="get" onsubmit="return checkDate();"><label class="selectWrapper"><select class="selecta" id="bookTickets" name="EventInstanceId"><option value="">Select date</option><option value="177329">Thu 15 September 7:45pm</option><option value="177130">Fri 16 September 7:45pm</option><option value="177131">Sat 17 September 7:45pm</option></select><button type="submit">continue</button></label><input type="hidden" name="eventID" value="20838" /></form>
+      </article>
+      <div class="genreStrip" style="background-color: #dd0c7f;">
+
+      </div>
+      <div class="cleaner">&nbsp;</div>
+    </section>
+    <section class="column550RightPad">
+      <article class="darkGreyBg"><p>Based on the 2010 BAFTA nominated film, this rowdy, stirring, thoroughly British comedy musical centres around a group of female workers at Ford's Dagenham plant who go on strike to fight inequality of pay for women. The events portrayed in the musical ultimately led to the Equal Pay Act of 1970.</p>
+        <p>Expect energy and humour by the bucketload from our talented and vibrant cast.</p></article>
+
+    </section>
+    <section class="column310NoPad">
+      <section class="column310NoPad">
+        <article class="lightGreyBg">
+          <h2 class="purple">performances</h2>
+          <p class="bold">Thu 15 - Sat 17 September 2016 at 7.45pm</p>
+          <h2 class="purple">tickets</h2>
+          <p class="bold">£14/£11 (Thu £12/£9)</p>
+
+        </article>
+      </section>
+      <div class="cleaner">&nbsp;</div>
+      <section class="socialMedia"><div class="twitter"><a href="https://twitter.com/share?url=http://www.adctheatre.com/whats-on/musical/made-in-dagenham.aspx" class="twitter-share-button" data-lang="en" data-text="@adctheatre">
+        Tweet
+      </a></div><div class="facebook"><div class="fb-like" data-href="http://www.adctheatre.com/whats-on/musical/made-in-dagenham.aspx" data-send="false" data-layout="button_count" data-width="310" data-show-faces="false" /></div><div class="cleaner"> </div></section>
+      <section class="column310NoPad">
+        <h3><a class="twitter" href="http://twitter.com/adctheatre" target="_blank">Twitter</a></h3><div class="lightGreyBg"><ul class="socialMediaFeed"><li class="">RT @camactors: Proud 2 present this rarely performed drama @adctheatre ! Join us in steamy Mexico -- &amp; wear your casuals! <a href="https://t.co/qmx1…" target="_blank">https://t.co/qmx1…</a> - <a class="view" href="https://twitter.com/adctheatre/status/757894142911471616" target="_blank">view »</a></li><li class="">RT @editordeedee: Tonight's the night! #TheNightoftheIguana opens @adctheatre Cambridge! Thrilled 2 b in this #TennesseeWilliams drama - gr… - <a class="view" href="https://twitter.com/adctheatre/status/757894125748387840" target="_blank">view »</a></li><li class="">RT @youngactorsco: Pre-Preview games!! Chance to come and see the show on Friday!! #YAC @GreensideVenue @adctheatre <a href="https://t.co/M5iZ7GOn4F" target="_blank">https://t.co/M5iZ7GOn4F</a> - <a class="view" href="https://twitter.com/adctheatre/status/757894100981022722" target="_blank">view »</a></li><li class="">RT @castcambridge: We conclude our tour with a run Tuesday 4 - Saturday 8 October back on home ground @adctheatre - tickets on sale: https:… - <a class="view" href="https://twitter.com/adctheatre/status/760552154910298112" target="_blank">view »</a></li><li class="">RT @Viva_Group: Four done and nine left to go! Go team @VivaAdcEdFring1 @GreensideVenue @adctheatre @edfringe <a href="https://t.co/hxzcVtPgtp" target="_blank">https://t.co/hxzcVtPgtp</a> - <a class="view" href="https://twitter.com/adctheatre/status/760552137243983876" target="_blank">view »</a></li><li class="">RT @castcambridge: Next up, of course, is our beloved @adctheatre. Join us here for one night only before we head across the pond <a href="https://t…" target="_blank">https://t…</a> - <a class="view" href="https://twitter.com/adctheatre/status/760552114959638528" target="_blank">view »</a></li><li class="">RT @yourspaceapts: The Night of the Iguana; Tennessee Williams’s love story is on at @adctheatre in #Cambridge <a href="https://t.co/ATrg5Rg3OB" target="_blank">https://t.co/ATrg5Rg3OB</a> http… - <a class="view" href="https://twitter.com/adctheatre/status/756068630182395904" target="_blank">view »</a></li><li class="">RT @PaperPlanesImp: Tickets on sale now for show Sunday 7pm @adctheatre. Singing never-heard-before songs! <a href="https://t.co/YwTqEPa2bO" target="_blank">https://t.co/YwTqEPa2bO</a> <a href="https://…" target="_blank">https://…</a> - <a class="view" href="https://twitter.com/adctheatre/status/756068594274926593" target="_blank">view »</a></li><li class="">RT @editordeedee: At 2:15pm tune in: @BBCCambs 2 hear #TheNightoftheIguana director Steve Doke, actor David John discuss upcoming @camactor… - <a class="view" href="https://twitter.com/adctheatre/status/756068574834352128" target="_blank">view »</a></li></ul></div>
+      </section>
+    </section>
+
+    <div class="cleaner">&nbsp;</div>
+  </div>
+  <footer>
+    <section id="footerContent">
+      <div id="footerImage">&nbsp;</div>
+      <section class="footerCols">
+        <h4 class="footerCols">sitemap</h4><nav><ul><li><a class="white" href="/">Home</a></li><li><a class="white" href="/whats-on.aspx">What's on</a></li><li><a class="white" href="/blog.aspx">blog</a></li><li><a class="white" href="/your-visit.aspx">Your Visit</a></li><li><a class="white" href="/about-us.aspx">About us</a></li><li><a class="white" href="/production.aspx">Production</a></li><li><a class="white" href="/get-involved.aspx">Get involved</a></li><li><a class="white" href="/contact-us.aspx">Contact us</a></li><li><a class="white" href="/support-us.aspx">Support us</a></li></ul></nav>
+      </section>
+      <section class="footerCols">
+        <h4>coming up</h4><nav><ul><li><a class="white" href="/whats-on/drama/cast-2016-as-you-like-it-preview.aspx">As You Like It (Preview)</a></li><li><a class="white" href="/whats-on/workshop/backstage-at-the-adc-theatre.aspx">Backstage at the ADC Theatre</a></li><li><a class="white" href="/whats-on/musical/made-in-dagenham.aspx">Made in Dagenham</a></li><li><a class="white" href="/whats-on/musical/fame.aspx">Fame </a></li><li><a class="white" href="/whats-on/drama/as-you-like-it.aspx">As You Like It</a></li><li><a class="white" href="/whats-on/comedy/the-cambridge-footlights-international-tour-show-2016-lagoon-(1).aspx">The Cambridge Footlights International Tour Show 2016: Lagoon</a></li></ul></nav>
+      </section>
+      <section class="footerCols">
+        <h4>where we are</h4>
+        <p><a href="/your-visit/find-us.aspx" title="find us">ADC Theatre<br /> Park Street<br /> Cambridge<br /> CB5 8AS</a></p>
+        <p><a href="/your-visit/find-us.aspx" title="Your visit"><br /></a> 01223 300085</p>
+      </section>
+      <p class="footerCredit"><a class="white" href="/your-visit/help.aspx">Help</a> | <a class="white" href="/about-us/vacancies.aspx">Vacancies</a> | <a class="white" href="/terms-and-conditions.aspx">Terms and conditions</a> | <a class="white" href="/privacy,-security-cookies.aspx">Privacy, Security &amp; Cookies</a> | <a class="white" href="/press.aspx">Press</a> | <a class="white" href="/tcs-download.aspx">T&amp;Cs download</a></p>
+      <div class="cleaner">&nbsp;</div>
+    </section>
+  </footer>
+  <!-- Basket -->
+  <!--div id="basketShroud">&nbsp;</div>
+  <div id="basket">
+    <h2 class="purple">basket</h2>
+    <hr />
+    <section class="columnLeft">
+      <iframe frameborder="0" id="SpektrixBasket" name="SpektrixBasket" style="width:100%; height:100%"></iframe>
+    </section>
+    <nav class="columnRight" id="relatedEvents"><h3 class="purple">you may also like...</h3><ul><li style="background-image: url(/ImageGen.ashx?image=/media/112691101/I-Shall-Be-Remembered_Square.jpg&amp;width=64&amp;compression=100&amp;constrain=true);"><span class="heading">I Shall Be Remembered</span><a class="buttonSmall" href="http://www.adcticketing.com/whats-on/drama/i-shall-be-remembered.aspx">more info</a></li><li style="background-image: url(/ImageGen.ashx?image=/media/107947393/As-You-Like-It_Square.jpg&amp;width=64&amp;compression=100&amp;constrain=true);"><span class="heading">As You Like It (Preview)</span><a class="buttonSmall" href="/whats-on/drama/cast-2016-as-you-like-it-preview.aspx">more info</a></li><li style="background-image: url(/ImageGen.ashx?image=/media/997805/curtain_Square.jpg&amp;width=64&amp;compression=100&amp;constrain=true);"><span class="heading">Backstage at the ADC Theatre</span><a class="buttonSmall" href="/whats-on/workshop/backstage-at-the-adc-theatre.aspx">more info</a></li><li style="background-image: url(/ImageGen.ashx?image=/media/112832935/Made-in-Dagenham_Square.jpg&amp;width=64&amp;compression=100&amp;constrain=true);"><span class="heading">Made in Dagenham</span><a class="buttonSmall" href="/whats-on/musical/made-in-dagenham.aspx">more info</a></li></ul></nav><p class="white"></p>
+  </div-->
+  <!--/ Basket -->
+</div>
+<div class="attribution">A <a href="http://www.papertreedigital.com" target="_blank">Papertree Digital</a> website.</div>
+<!--! end of #container -->
+<script src="/scripts/core.js"></script>
+
+<script src="/scripts/shows.js"></script>
+<script>
+  // Store the longitude and latitude here so we can load the google map.
+
+</script>
+<script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0];if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src="//platform.twitter.com/widgets.js";fjs.parentNode.insertBefore(js,fjs);}}(document,"script","twitter-wjs");</script>
+
+<iframe frameborder="0" id="SpektrixKeepAlive" name="SpektrixKeepAlive" src="http://system.spektrix.com/adctheatre/website/KeepAlive.aspx"> </iframe>
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+      (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+    m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+  ga('create', 'UA-47676537-1', 'adctheatre.com');
+  //ga('create', 'UA-47676537-1', 'adctheatre.com');
+  ga('send', 'pageview');
+</script>
+<!--[if lt IE 7 ]>
+<script src="//ajax.googleapis.com/ajax/libs/chrome-frame/1.0.2/CFInstall.min.js"></script>
+<script>window.attachEvent("onload",function(){CFInstall.check({mode:"overlay"})})</script>
+<script src="/scripts/libs/dd_belatedpng.js"></script>
+<script>DD_belatedPNG.fix('img, .png_bg');</script>
+<![endif]-->
+</body>
+</html>
