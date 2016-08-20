@@ -9,7 +9,7 @@ import java.util.Locale
 import scala.util.Try
 
 
-sealed trait DateTokenLike[T] {
+trait DateTokenLike[T] {
     def value: T
 }
 
@@ -83,87 +83,89 @@ object DayOfWeekToken {
 }
 
 
-case class TimeToken(value: LocalTime) extends DateTokenLike[LocalTime]
-
-object TimeToken { // TODO refactor
-
-    // Matches times seperated by either : or . will match a 24 hour time, or a 12 hour time with AM or PM specified. Allows 0-59 minutes, and 0-59 seconds. Seconds are not required.
-    // Replace (AM|am|aM|Am|PM|pm|pM|Pm) with (?i:(a|p)(\.)?( )?m(\.)?) and you will match any combination of am/pm (case insensitive) including with periods and spaces (i.e., AM, A.M., or A. M.)
-    // Matches: 1:01 AM | 23:52:01 | 03.24.36 AM
-    // Non-Matches: 19:31 AM | 9:9 PM | 25:60:61
-    // From: http://regexlib.com/REDetails.aspx?regexp_id=144
-    private val timeRegEx =
-        """((([0]?[1-9]|1[0-2])((:|\.)[0-5][0-9])?((:|\.)[0-5][0-9])?( )?(AM|am|aM|Am|PM|pm|pM|Pm))|(([0]?[0-9]|1[0-9]|2[0-3])(:|\.)[0-5][0-9]((:|\.)[0-5][0-9])?))""".r
-    //"""^((([0]?[1-9]|1[0-2])(:|\.)[0-5][0-9]((:|\.)[0-5][0-9])?( )?(AM|am|aM|Am|PM|pm|pM|Pm))|(([0]?[0-9]|1[0-9]|2[0-3])(:|\.)[0-5][0-9]((:|\.)[0-5][0-9])?))$""".r
-
-    private val formatter24H = new DateTimeFormatterBuilder()
-        .appendValue(HOUR_OF_DAY, 1, 2, SignStyle.NEVER)
-        .appendLiteral(':')
-        .appendValue(MINUTE_OF_HOUR, 1, 2, SignStyle.NEVER)
-        .optionalStart()
-        .appendLiteral(':')
-        .appendValue(SECOND_OF_MINUTE, 1, 2, SignStyle.NEVER)
-        .optionalStart()
-        .appendFraction(NANO_OF_SECOND, 0, 9, true)
-        .toFormatter
-
-    private val formatter12H = new DateTimeFormatterBuilder()
-        .appendValue(HOUR_OF_AMPM, 1, 2, SignStyle.NEVER)
-        .optionalStart()
-        .appendLiteral(':')
-        .appendValue(MINUTE_OF_HOUR, 1, 2, SignStyle.NEVER)
-        .optionalStart()
-        .appendLiteral(':')
-        .appendValue(SECOND_OF_MINUTE, 1, 2, SignStyle.NEVER)
-        .optionalStart()
-        .appendFraction(NANO_OF_SECOND, 0, 9, true)
-        .optionalEnd()
-        .optionalEnd()
-        .optionalEnd()
-        .appendText(AMPM_OF_DAY)
-        .toFormatter()
-
-    private val formatter12HwithDot = new DateTimeFormatterBuilder()
-        .appendValue(HOUR_OF_AMPM, 1, 2, SignStyle.NEVER)
-        .optionalStart()
-        .appendLiteral('.')
-        .appendValue(MINUTE_OF_HOUR, 1, 2, SignStyle.NEVER)
-        .optionalStart()
-        .appendLiteral('.')
-        .appendValue(SECOND_OF_MINUTE, 1, 2, SignStyle.NEVER)
-        .optionalStart()
-        .appendFraction(NANO_OF_SECOND, 0, 9, true)
-        .optionalEnd()
-        .optionalEnd()
-        .optionalEnd()
-        .appendText(AMPM_OF_DAY)
-        .toFormatter()
-
-
-    private def format24H(text: String): Option[LocalTime] = Try {
-        LocalTime.parse(text, formatter24H)
-    }.toOption
-
-    private def format12H(text: String): Option[LocalTime] = Try {
-        if (text.contains(':')) LocalTime.parse(text, formatter12H)
-        else LocalTime.parse(text, formatter12HwithDot)
-    }.toOption
-
-    def parseTimeString(text: String): LocalTime = {
-        if (format12H(text).isEmpty) {
-            if (format24H(text).isEmpty) LocalTime.parse("11:11PM", formatter12H) ///  // refactor may return null
-            else format24H(text).get
-        }
-        else format12H(text).get
-    }
-
-    def of(token: String): Option[TimeToken] = {
-
-        val time = timeRegEx.findFirstIn(token)
-        if (time.nonEmpty) Some(TimeToken(parseTimeString(time.get.replaceAll("\\s", "").toUpperCase())))
-        else None
-    }
-}
+//case class TimeToken(value: LocalTime) extends DateTokenLike[LocalTime]
+//
+//object TimeToken { // TODO refactor
+//
+//    // Matches times seperated by either : or . will match a 24 hour time, or a 12 hour time with AM or PM specified. Allows 0-59 minutes, and 0-59 seconds. Seconds are not required.
+//    // Replace (AM|am|aM|Am|PM|pm|pM|Pm) with (?i:(a|p)(\.)?( )?m(\.)?) and you will match any combination of am/pm (case insensitive) including with periods and spaces (i.e., AM, A.M., or A. M.)
+//    // Matches: 1:01 AM | 23:52:01 | 03.24.36 AM
+//    // Non-Matches: 19:31 AM | 9:9 PM | 25:60:61
+//    // From: http://regexlib.com/REDetails.aspx?regexp_id=144
+//    private val timeRegEx =
+//        """((([0]?[1-9]|1[0-2])((:|\.)[0-5][0-9])?((:|\.)[0-5][0-9])?( )?(AM|am|aM|Am|PM|pm|pM|Pm))|(([0]?[0-9]|1[0-9]|2[0-3])(:|\.)[0-5][0-9]((:|\.)[0-5][0-9])?))""".r
+//    //"""^((([0]?[1-9]|1[0-2])(:|\.)[0-5][0-9]((:|\.)[0-5][0-9])?( )?(AM|am|aM|Am|PM|pm|pM|Pm))|(([0]?[0-9]|1[0-9]|2[0-3])(:|\.)[0-5][0-9]((:|\.)[0-5][0-9])?))$""".r
+//
+//    private val formatter24H = new DateTimeFormatterBuilder()
+//        .appendValue(HOUR_OF_DAY, 1, 2, SignStyle.NEVER)
+//        .appendLiteral(':')
+//        .appendValue(MINUTE_OF_HOUR, 1, 2, SignStyle.NEVER)
+//        .optionalStart()
+//        .appendLiteral(':')
+//        .appendValue(SECOND_OF_MINUTE, 1, 2, SignStyle.NEVER)
+//        .optionalStart()
+//        .appendFraction(NANO_OF_SECOND, 0, 9, true)
+//        .toFormatter
+//
+//    private val formatter12H = new DateTimeFormatterBuilder()
+//        .appendValue(HOUR_OF_AMPM, 1, 2, SignStyle.NEVER)
+//        .optionalStart()
+//        .appendLiteral(':')
+//        .appendValue(MINUTE_OF_HOUR, 1, 2, SignStyle.NEVER)
+//        .optionalStart()
+//        .appendLiteral(':')
+//        .appendValue(SECOND_OF_MINUTE, 1, 2, SignStyle.NEVER)
+//        .optionalStart()
+//        .appendFraction(NANO_OF_SECOND, 0, 9, true)
+//        .optionalEnd()
+//        .optionalEnd()
+//        .optionalEnd()
+//        .appendText(AMPM_OF_DAY)
+//        .toFormatter()
+//
+//    private val formatter12HwithDot = new DateTimeFormatterBuilder()
+//        .appendValue(HOUR_OF_AMPM, 1, 2, SignStyle.NEVER)
+//        .optionalStart()
+//        .appendLiteral('.')
+//        .appendValue(MINUTE_OF_HOUR, 1, 2, SignStyle.NEVER)
+//        .optionalStart()
+//        .appendLiteral('.')
+//        .appendValue(SECOND_OF_MINUTE, 1, 2, SignStyle.NEVER)
+//        .optionalStart()
+//        .appendFraction(NANO_OF_SECOND, 0, 9, true)
+//        .optionalEnd()
+//        .optionalEnd()
+//        .optionalEnd()
+//        .appendText(AMPM_OF_DAY)
+//        .toFormatter()
+//
+//
+//    private def format24H(text: String): Option[LocalTime] = Try {
+//        LocalTime.parse(text, formatter24H)
+//    }.toOption
+//
+//    private def format12H(text: String): Option[LocalTime] = Try {
+//        if (text.contains(':')) LocalTime.parse(text, formatter12H)
+//        else LocalTime.parse(text, formatter12HwithDot)
+//    }.toOption
+//
+//    def parseTimeString(text: String): LocalTime = { // todo do not repeat call to parser
+//        if (format12H(text).isEmpty) {
+//            if (format24H(text).isEmpty) LocalTime.parse("11:11PM", formatter12H) ///  // refactor may return null
+//            else format24H(text).get
+//        }
+//        else format12H(text).get
+//    }
+//
+//    def of(token: String): Option[TimeToken] = {
+//
+//        val time = timeRegEx.findFirstIn(token)
+//
+//        val timeToken = if (time.nonEmpty) Some(TimeToken(parseTimeString(time.get.replaceAll("\\s", "").toUpperCase())))
+//        else None
+//        return timeToken
+//    }
+//}
 
 
 case class RangeToken(value: String) extends DateTokenLike[String]

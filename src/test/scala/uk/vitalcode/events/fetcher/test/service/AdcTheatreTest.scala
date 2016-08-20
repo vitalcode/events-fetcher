@@ -32,28 +32,32 @@ class AdcTheatreTest extends FetcherTest {
             "/adcTheatre/image.jpeg", MineType.IMAGE_JPEG,
             "http://www.adctheatre.com/whats-on/drama/cast-2016-as-you-like-it-preview.aspx", "adcTheater:image")
 
-//        // page  link 2
-//        putTestDataRow("http://www.adctheatre.com/whats-on/workshop/backstage-at-the-adc-theatre.aspx",
-//            "/adcTheatre/list1-details-2.html", MineType.TEXT_HTML,
-//            "http://www.adctheatre.com/whats-on/workshop/backstage-at-the-adc-theatre.aspx", "adcTheater:description")
-//        // page 1 link 2 image
-//        putTestDataRow("http://www.adctheatre.com/media/997805/curtain_Landscape.jpg",
-//            "/adcTheatre/image.jpeg", MineType.IMAGE_JPEG,
-//            "http://www.adctheatre.com/whats-on/workshop/backstage-at-the-adc-theatre.aspx", "adcTheater:description")
-//
-//        // page  link 2
-//        putTestDataRow("http://www.adctheatre.com/whats-on/musical/made-in-dagenham.aspx",
-//            "/adcTheatre/list1-details-3.html", MineType.TEXT_HTML,
-//            "http://www.adctheatre.com/whats-on/musical/made-in-dagenham.aspx", "adcTheater:description")
-//        // page 1 link 2 image
-//        putTestDataRow("http://www.adctheatre.com/media/112832935/Made-in-Dagenham_Landscape.jpg",
-//            "/adcTheatre/image.jpeg", MineType.IMAGE_JPEG,
-//            "http://www.adctheatre.com/whats-on/musical/made-in-dagenham.aspx", "adcTheater:description")
+        // page  link 2
+        putTestDataRow("http://www.adctheatre.com/whats-on/workshop/backstage-at-the-adc-theatre.aspx",
+            "/adcTheatre/list1-details-2.html", MineType.TEXT_HTML,
+            "http://www.adctheatre.com/whats-on/workshop/backstage-at-the-adc-theatre.aspx", "adcTheater:description")
+        // page 1 link 2 image
+        putTestDataRow("http://www.adctheatre.com/media/997805/curtain_Landscape.jpg",
+            "/adcTheatre/image.jpeg", MineType.IMAGE_JPEG,
+            "http://www.adctheatre.com/whats-on/workshop/backstage-at-the-adc-theatre.aspx", "adcTheater:image")
+        //
+        //        // page  link 2
+        //        putTestDataRow("http://www.adctheatre.com/whats-on/musical/made-in-dagenham.aspx",
+        //            "/adcTheatre/list1-details-3.html", MineType.TEXT_HTML,
+        //            "http://www.adctheatre.com/whats-on/musical/made-in-dagenham.aspx", "adcTheater:description")
+        //        // page 1 link 2 image
+        //        putTestDataRow("http://www.adctheatre.com/media/112832935/Made-in-Dagenham_Landscape.jpg",
+        //            "/adcTheatre/image.jpeg", MineType.IMAGE_JPEG,
+        //            "http://www.adctheatre.com/whats-on/musical/made-in-dagenham.aspx", "adcTheater:image")
     }
 
     private def expectedEsDataDescription(): DataTable = {
         DataTableBuilder()
             .addRow(buildEventList1Details1("2016-08-25T19:45:00"))
+
+            .addRow(buildEventList1Details2("2016-09-09T12:00:00"))
+            .addRow(buildEventList1Details2("2016-09-09T14:00:00"))
+            .addRow(buildEventList1Details2("2016-09-09T16:00:00"))
             .build()
     }
 
@@ -74,6 +78,20 @@ class AdcTheatreTest extends FetcherTest {
             .addColumn("venue-category", "theatre")
             .addColumn("telephone", "01223 300085")
             .addColumn("url", "http://www.adctheatre.com/whats-on/drama/cast-2016-as-you-like-it-preview.aspx")
+            .addColumn("category", "family")
+    }
+
+    private def buildEventList1Details2(from: String): DataRowBuilder = {
+        DataRowBuilder()
+            .addColumn("title", "Backstage at the ADC Theatre")
+            .addColumn("description", "The ADC is a centre of student drama in Cambridge and a space that has helped launch the careers of theatre luminaries such as Sir Ian McKellen, Emma Thompson and Rachel Weiss. This tour explores what happens behind the curtains, taking you to areas that are usually closed to the public.")
+            .addColumn("image", "http://www.adctheatre.com/media/997805/curtain_Landscape.jpg")
+            .addColumn("cost", "Free")
+            .addColumn("from", from)
+            .addColumn("venue", "ADC Theatre, Park Street, Cambridge, CB5 8AS")
+            .addColumn("venue-category", "theatre")
+            .addColumn("telephone", "01223 300085")
+            .addColumn("url", "http://www.adctheatre.com/whats-on/workshop/backstage-at-the-adc-theatre.aspx")
             .addColumn("category", "family")
     }
 }
