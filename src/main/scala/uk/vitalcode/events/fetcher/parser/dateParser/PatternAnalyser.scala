@@ -16,10 +16,9 @@ object PatternAnalyser extends Log {
               dayOfWeekTimes: Map[DayOfWeek, (LocalTime, LocalTime)]): Set[(LocalDateTime, Option[LocalDateTime])] = {
 
         dates.toList match {
-            case Nil => {
+            case Nil =>
                 log.info("No dates")
                 Set()
-            }
             case date :: Nil => analyseOneDatePattern(date, times)
             case fromDate :: toDate :: Nil => analyseDateRangePattern(fromDate, toDate, times, daysOfWeek, dayOfWeekTimes)
             case _ => analyseMultipleDatesPattern(dates, times)
@@ -54,10 +53,18 @@ object PatternAnalyser extends Log {
 
     def analyseMultipleDatesPattern(dates: Vector[LocalDate],
                                     times: Vector[LocalTime]): Set[(LocalDateTime, Option[LocalDateTime])] = {
-        val fromTime = times.headOption
-        val toTime = times.lastOption
 
-        dates.map(d => (dateWithFromTime(d, fromTime), Some(dateWithToTime(d, toTime)))).toSet
+        if (dates.length != times.length) {
+            val fromTime = times.headOption
+            val toTime = times.lastOption
+
+            dates.map(d => (dateWithFromTime(d, fromTime), Some(dateWithToTime(d, toTime)))).toSet
+        } else {
+            dates.zip(times)
+                .map {
+                    case (date: LocalDate, time: LocalTime) => (dateWithFromTime(date, Some(time)), None)
+                }.toSet
+        }
     }
 
     private def dateWithFromTime(date: LocalDate, time: Option[LocalTime], dayOfWeekTimes: Map[DayOfWeek, (LocalTime, LocalTime)] = Map()): LocalDateTime = {

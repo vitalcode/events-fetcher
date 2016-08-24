@@ -91,11 +91,18 @@ class DateParserTest extends WordSpec with ShouldMatchers {
         }
         "parsing dates from Adc Theatre" should {
 
-            "parse multiple dates each following from time" in {
+            "parse multiple same dates each following from time" in {
                 assertDate("Select date Fri 09 September 12:00pm Fri 09 September 2:00pm Fri 09 Sep 4:00pm (last few)",
                     LocalDateTime.of(2016, Month.SEPTEMBER, 9, 12, 0),
                     LocalDateTime.of(2016, Month.SEPTEMBER, 9, 14, 0),
-                    LocalDateTime.of(2016, Month.SEPTEMBER, 9, 16, 4)
+                    LocalDateTime.of(2016, Month.SEPTEMBER, 9, 16, 0)
+                )
+            }
+            "parse multiple different dates each following from time" in {
+                assertDate("Select date Thu 15 September 7:45pm Fri 16 September 7:45pm Sat 17 September 7:45pm",
+                    LocalDateTime.of(2016, Month.SEPTEMBER, 15, 19, 45),
+                    LocalDateTime.of(2016, Month.SEPTEMBER, 16, 19, 45),
+                    LocalDateTime.of(2016, Month.SEPTEMBER, 17, 19, 45)
                 )
             }
         }

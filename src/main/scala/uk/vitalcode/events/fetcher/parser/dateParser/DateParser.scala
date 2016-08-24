@@ -1,6 +1,5 @@
 package uk.vitalcode.events.fetcher.parser.dateParser
 
-import java.io.Serializable
 import java.time._
 import java.time.format.DateTimeFormatter
 
@@ -8,8 +7,6 @@ import uk.vitalcode.events.fetcher.common.Log
 import uk.vitalcode.events.fetcher.parser.ParserLike
 import uk.vitalcode.events.fetcher.utils.DateTimeUtil
 import uk.vitalcode.events.model.Prop
-
-import scala.util.{Success, Try}
 
 object DateParser extends ParserLike[(String, Option[String])] with Log {
 
@@ -34,9 +31,11 @@ object DateParser extends ParserLike[(String, Option[String])] with Log {
         logInfo(s"parsing prop value: [${prop.values.mkString(" ")}]")
 
         val tokens = splitRegEx.split(prop.values.mkString(" ")).filter(t => !t.isEmpty)
-            .flatMap(t => {
-                DateTokenFactory.create(t.trim())
-            })
+            .zipWithIndex
+            .flatMap {
+                case (token, index) => DateTokenFactory.create(token, index)
+            }
+
         logInfo(s"tokens [${tokens.length}] [${tokens.mkString(",")}]")
 
         val dates: Vector[LocalDate] = (for {
@@ -54,12 +53,14 @@ object DateParser extends ParserLike[(String, Option[String])] with Log {
                             if (year.isEmpty) LocalDateTime.now().getYear else year.get.value,
                             month.get.value,
                             dayOfMonth.get.value)
-                        if (date.isSuccess) Vector(DateToken(date.get)) else g
-                    } else g
+                        if (date.isSuccess) Vector(DateToken(date.get, dayOfMonth.get.index)) else None
+                    } else None
                 })
-                .filter(d => d.isInstanceOf[DateToken])
-                .map(d => d.asInstanceOf[DateToken].value)
-            ).distinct.toVector
+            )
+            .distinct
+            .map(d => d.value)
+            .toVector
+
         logInfo(s"dates [${dates.size}] [$dates]")
 
         val times: Vector[LocalTime] = tokens.flatMap(t => t match {

@@ -32,7 +32,7 @@ class AdcTheatreTest extends FetcherTest {
             "/adcTheatre/image.jpeg", MineType.IMAGE_JPEG,
             "http://www.adctheatre.com/whats-on/drama/cast-2016-as-you-like-it-preview.aspx", "adcTheater:image")
 
-        // page  link 2
+        // page 1 link 2
         putTestDataRow("http://www.adctheatre.com/whats-on/workshop/backstage-at-the-adc-theatre.aspx",
             "/adcTheatre/list1-details-2.html", MineType.TEXT_HTML,
             "http://www.adctheatre.com/whats-on/workshop/backstage-at-the-adc-theatre.aspx", "adcTheater:description")
@@ -40,15 +40,15 @@ class AdcTheatreTest extends FetcherTest {
         putTestDataRow("http://www.adctheatre.com/media/997805/curtain_Landscape.jpg",
             "/adcTheatre/image.jpeg", MineType.IMAGE_JPEG,
             "http://www.adctheatre.com/whats-on/workshop/backstage-at-the-adc-theatre.aspx", "adcTheater:image")
-        //
-        //        // page  link 2
-        //        putTestDataRow("http://www.adctheatre.com/whats-on/musical/made-in-dagenham.aspx",
-        //            "/adcTheatre/list1-details-3.html", MineType.TEXT_HTML,
-        //            "http://www.adctheatre.com/whats-on/musical/made-in-dagenham.aspx", "adcTheater:description")
-        //        // page 1 link 2 image
-        //        putTestDataRow("http://www.adctheatre.com/media/112832935/Made-in-Dagenham_Landscape.jpg",
-        //            "/adcTheatre/image.jpeg", MineType.IMAGE_JPEG,
-        //            "http://www.adctheatre.com/whats-on/musical/made-in-dagenham.aspx", "adcTheater:image")
+
+        // page 1 link 3
+        putTestDataRow("http://www.adctheatre.com/whats-on/musical/made-in-dagenham.aspx",
+            "/adcTheatre/list1-details-3.html", MineType.TEXT_HTML,
+            "http://www.adctheatre.com/whats-on/musical/made-in-dagenham.aspx", "adcTheater:description")
+        // page 1 link 3 image
+        putTestDataRow("http://www.adctheatre.com/media/112832935/Made-in-Dagenham_Landscape.jpg",
+            "/adcTheatre/image.jpeg", MineType.IMAGE_JPEG,
+            "http://www.adctheatre.com/whats-on/musical/made-in-dagenham.aspx", "adcTheater:image")
     }
 
     private def expectedEsDataDescription(): DataTable = {
@@ -58,6 +58,10 @@ class AdcTheatreTest extends FetcherTest {
             .addRow(buildEventList1Details2("2016-09-09T12:00:00"))
             .addRow(buildEventList1Details2("2016-09-09T14:00:00"))
             .addRow(buildEventList1Details2("2016-09-09T16:00:00"))
+
+            .addRow(buildEventList1Details3("2016-09-15T19:45:00"))
+            .addRow(buildEventList1Details3("2016-09-16T19:45:00"))
+            .addRow(buildEventList1Details3("2016-09-17T19:45:00"))
             .build()
     }
 
@@ -93,5 +97,23 @@ class AdcTheatreTest extends FetcherTest {
             .addColumn("telephone", "01223 300085")
             .addColumn("url", "http://www.adctheatre.com/whats-on/workshop/backstage-at-the-adc-theatre.aspx")
             .addColumn("category", "family")
+    }
+
+    private def buildEventList1Details3(from: String): DataRowBuilder = {
+        DataRowBuilder()
+            .addColumn("title", "Made in Dagenham")
+            .addColumn("description",
+                "Book by Richard Bean, Music by David Arnold and Lyrics by Richard Thomas",
+                "Based on the 2010 BAFTA nominated film, this rowdy, stirring, thoroughly British comedy musical centres around a group of female workers at Ford's Dagenham plant who go on strike to fight inequality of pay for women. The events portrayed in the musical ultimately led to the Equal Pay Act of 1970.",
+                "Expect energy and humour by the bucketload from our talented and vibrant cast."
+            )
+            .addColumn("image", "http://www.adctheatre.com/media/112832935/Made-in-Dagenham_Landscape.jpg")
+            .addColumn("cost", "£14/£11 (Thu £12/£9)")
+            .addColumn("from", from)
+            .addColumn("venue", "ADC Theatre, Park Street, Cambridge, CB5 8AS")
+            .addColumn("venue-category", "theatre")
+            .addColumn("telephone", "01223 300085")
+            .addColumn("url", "http://www.adctheatre.com/whats-on/musical/made-in-dagenham.aspx")
+            .addColumn("category", "fundraising")
     }
 }

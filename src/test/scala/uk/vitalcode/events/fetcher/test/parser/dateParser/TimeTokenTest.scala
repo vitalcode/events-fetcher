@@ -71,7 +71,7 @@ class TimeTokenTest extends WordSpec with ShouldMatchers {
 
     private def beTimeToken(right: LocalTime = null): Matcher[String] = new Matcher[String] {
         def apply(left: String): MatchResult = {
-            val token = TimeToken.of(left)
+            val token = TimeToken.of(left, 0)
             MatchResult(
                 token.isDefined && token.get.value == right,
                 s"String [$left] does not result in TimeToken [$right]",
@@ -82,7 +82,7 @@ class TimeTokenTest extends WordSpec with ShouldMatchers {
 
     private def notBeTimeToken(): Matcher[String] = new Matcher[String] {
         def apply(left: String): MatchResult = {
-            val token = TimeToken.of(left)
+            val token = TimeToken.of(left, 0)
             MatchResult(
                 token.isEmpty,
                 s"String [$left] results in TimeToken [${token.getOrElse("")}]",

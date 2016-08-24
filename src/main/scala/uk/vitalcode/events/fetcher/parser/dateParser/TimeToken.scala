@@ -5,7 +5,7 @@ import java.time.format.DateTimeFormatter
 
 import scala.util.Try
 
-case class TimeToken(value: LocalTime) extends DateTokenLike[LocalTime]
+case class TimeToken(value: LocalTime, index: Int) extends DateTokenLike[LocalTime]
 
 object TimeToken {
 
@@ -29,11 +29,11 @@ object TimeToken {
         LocalTime.parse(preProcessTimeString(str), formatter)
     }
 
-    def of(token: String): Option[TimeToken] = {
+    def of(token: String, index: Int): Option[TimeToken] = {
         val timeStr = timeRegEx.findFirstIn(token)
         if (timeStr.isDefined){
             val time = parseTime(timeStr.get)
-            if (time.isSuccess) Some(TimeToken(time.get)) else None
+            if (time.isSuccess) Some(TimeToken(time.get, index)) else None
         }
         else None
     }
