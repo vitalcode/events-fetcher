@@ -90,7 +90,7 @@ case class RangeToken(value: String, index: Int) extends DateTokenLike[String]
 
 object RangeToken {
 
-    private val rangeRegEx = """(-|to|until)""".r
+    private val rangeRegEx = """(-|to|until|\|)""".r
 
     def of(token: String, index: Int): Option[RangeToken] = {
         val range = rangeRegEx.findFirstIn(token)

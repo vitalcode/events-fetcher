@@ -84,7 +84,9 @@ object DateParser extends ParserLike[(String, Option[String])] with Log {
         }.toSet
         logInfo(s"daysOfWeek [${daysOfWeek.size}] [$daysOfWeek]")
 
-        PatternAnalyser(dates, times, daysOfWeek, dayOfWeekTimes)
+        val range = tokens.exists(t => t.isInstanceOf[RangeToken])
+
+        PatternAnalyser(dates, times, daysOfWeek, dayOfWeekTimes, range)
     }
 }
 

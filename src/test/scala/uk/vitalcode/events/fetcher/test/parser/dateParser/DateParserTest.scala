@@ -89,8 +89,9 @@ class DateParserTest extends WordSpec with ShouldMatchers {
             }
 
             "parse multiple week & day combination followed by month - no year + from10" in {
-                assertDateRange("(3 Feb 2017) Friday 19:30 21:30",
-                    (LocalDateTime.of(2017, Month.FEBRUARY, 3, 19, 30), LocalDateTime.of(2017, Month.FEBRUARY, 3, 21, 30))
+                assertDate("(3 Feb 2017) Friday 19:30 21:30",
+                    LocalDateTime.of(2017, Month.FEBRUARY, 3, 19, 30),
+                    LocalDateTime.of(2017, Month.FEBRUARY, 3, 21, 30)
                 )
             }
 

@@ -13,25 +13,30 @@ object PatternAnalyser extends Log {
     def apply(dates: Vector[LocalDate],
               times: Vector[LocalTime],
               daysOfWeek: Set[DayOfWeek],
-              dayOfWeekTimes: Map[DayOfWeek, (LocalTime, LocalTime)]): Set[(LocalDateTime, Option[LocalDateTime])] = {
+              dayOfWeekTimes: Map[DayOfWeek, (LocalTime, LocalTime)],
+              range: Boolean): Set[(LocalDateTime, Option[LocalDateTime])] = {
 
         dates.toList match {
             case Nil =>
                 log.info("No dates")
                 Set()
-            case date :: Nil => analyseOneDatePattern(date, times)
+            case date :: Nil => analyseOneDatePattern(date, times, range)
             case fromDate :: toDate :: Nil => analyseDateRangePattern(fromDate, toDate, times, daysOfWeek, dayOfWeekTimes)
             case _ => analyseMultipleDatesPattern(dates, times)
         }
     }
 
     def analyseOneDatePattern(date: LocalDate,
-                              times: Vector[LocalTime]): Set[(LocalDateTime, Option[LocalDateTime])] = {
+                              times: Vector[LocalTime],
+                              range: Boolean): Set[(LocalDateTime, Option[LocalDateTime])] = {
 
-        val fromDate = dateWithFromTime(date, times.headOption)
-        val toDate = dateWithToTime(date, times.lastOption)
-
-        Set((fromDate, if (fromDate != toDate) Some(toDate) else None))
+        if (range || times.isEmpty) {
+            val fromDate = dateWithFromTime(date, times.headOption)
+            val toDate = dateWithToTime(date, times.lastOption)
+            Set((fromDate, if (fromDate != toDate) Some(toDate) else None))
+        } else {
+            times.map(t => (dateWithFromTime(date, Some(t)), None)).toSet
+        }
     }
 
 
