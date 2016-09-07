@@ -34,12 +34,17 @@ object MonthToken {
 
     private def getMonths: Seq[String] = new DateFormatSymbols(Locale.UK).getMonths.map(m => m.toLowerCase())
 
-    private def getShortMonths: Seq[String] = new DateFormatSymbols(Locale.UK).getShortMonths.map(m => m.toLowerCase())
+    private def getShortMonths: Seq[String] = new DateFormatSymbols(Locale.UK).getShortMonths.filter(m => m.nonEmpty).map(m => m.toLowerCase())
 
     def of(token: String, index: Int): Option[MonthToken] = {
         val tokenLowCase = token.toLowerCase()
         val monthsIndex = getMonths.indexOf(tokenLowCase)
-        val shortMonthsIndex = getShortMonths.indexOf(tokenLowCase)
+
+
+        val shortMonth = getShortMonths.find(m => tokenLowCase.contains(m))
+        val shortMonthsIndex = if (shortMonth.isDefined) getShortMonths.indexOf(shortMonth.get) else -1
+
+
         if (monthsIndex != -1) Some(MonthToken(monthsIndex + 1, index))
         else if (shortMonthsIndex != -1) Some(MonthToken(shortMonthsIndex + 1, index))
         else None

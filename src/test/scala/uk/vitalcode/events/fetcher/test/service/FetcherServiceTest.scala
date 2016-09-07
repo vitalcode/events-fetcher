@@ -24,67 +24,30 @@ class FetcherServiceTest extends FetcherTest {
 
     override protected def putTestData(): Unit = {
         // page 1 list
-        putTestDataRow("http://www.cambridgesciencecentre.org/whats-on/list/",
+        putTestDataRow("http://www.cambridgesciencecentre.org/whats-on/events-calendar/",
             "/clientCambridgeScienceCentreTest/list1.html", MineType.TEXT_HTML,
-            "http://www.cambridgesciencecentre.org/whats-on/events/destination-space-crew-09012016-1500/", "list")
+            "http://www.cambridgesciencecentre.org/whats-on/events-calendar/gums-bumsshow-10/", "cambridgeScienceCentre:list")
         // page 1 link 1
-        putTestDataRow("http://www.cambridgesciencecentre.org/whats-on/events/destination-space-crew-09012016-1500/",
-            "/clientCambridgeScienceCentreTest/destination-space-crew-09012016-1500.html", MineType.TEXT_HTML,
-            "http://www.cambridgesciencecentre.org/whats-on/events/destination-space-crew-09012016-1500/", "description")
+        putTestDataRow("http://www.cambridgesciencecentre.org/whats-on/events-calendar/gums-bumsshow-10/",
+            "/clientCambridgeScienceCentreTest/list1-details-1.html", MineType.TEXT_HTML,
+            "http://www.cambridgesciencecentre.org/whats-on/events-calendar/gums-bumsshow-10/", "cambridgeScienceCentre:description")
         // page 1 link 1 image
-        putTestDataRow("http://www.cambridgesciencecentre.org/media/assets/3a/969c39e09b655c715be0aa6b578908427d75e7.jpg",
-            "/clientCambridgeScienceCentreTest/destination-space-crew-09012016-1500.jpg", MineType.IMAGE_JPEG,
-            "http://www.cambridgesciencecentre.org/whats-on/events/destination-space-crew-09012016-1500/", "image")
-        // page 1 link 2
-        putTestDataRow("http://www.cambridgesciencecentre.org/whats-on/events/Voyagetospace_09012016_1600/",
-            "/clientCambridgeScienceCentreTest/voyagetospace_09012016_1600.html", MineType.TEXT_HTML,
-            "http://www.cambridgesciencecentre.org/whats-on/events/Voyagetospace_09012016_1600/", "description")
-        // page 1 link 2 image
-        putTestDataRow("http://www.cambridgesciencecentre.org/media/assets/3a/0004a8c035b90924f8321df21276fc8f83a6cd.jpg",
-            "/clientCambridgeScienceCentreTest/destination-space-crew-09012016-1500.jpg", MineType.IMAGE_JPEG,
-            "http://www.cambridgesciencecentre.org/whats-on/events/Voyagetospace_09012016_1600/", "image")
+        putTestDataRow("http://www.cambridgesciencecentre.org/media/cache/25/44/25446f694110fcaa739951a7a5151025.jpg",
+            "/clientCambridgeScienceCentreTest/image.jpeg", MineType.IMAGE_JPEG,
+            "http://www.cambridgesciencecentre.org/whats-on/events-calendar/gums-bumsshow-10/", "cambridgeScienceCentre:image")
 
         // page 2 list
-        putTestDataRow("http://www.cambridgesciencecentre.org/whats-on/list/?page=2",
+        putTestDataRow("http://www.cambridgesciencecentre.org/whats-on/events-calendar/week/2016-09-12/#pagination-fragment",
             "/clientCambridgeScienceCentreTest/list2.html", MineType.TEXT_HTML,
-            "http://www.cambridgesciencecentre.org/whats-on/events/otherworlds/", "list")
+            "http://www.cambridgesciencecentre.org/whats-on/events-calendar/recycle-life-0910/", "cambridgeScienceCentre:list")
         // page 2 link 1
-        putTestDataRow("http://www.cambridgesciencecentre.org/whats-on/events/otherworlds/",
-            "/clientCambridgeScienceCentreTest/otherworlds.html", MineType.TEXT_HTML,
-            "http://www.cambridgesciencecentre.org/whats-on/events/otherworlds/", "description")
+        putTestDataRow("http://www.cambridgesciencecentre.org/whats-on/events-calendar/recycle-life-0910/",
+            "/clientCambridgeScienceCentreTest/list2-details-1.html", MineType.TEXT_HTML,
+            "http://www.cambridgesciencecentre.org/whats-on/events-calendar/recycle-life-0910/", "cambridgeScienceCentre:description")
         // page 2 link 1 image
-        putTestDataRow("http://www.cambridgesciencecentre.org/media/assets/3a/37cf8f84e5cfa94cdcac3f73bc13cfea3556a7.jpg",
-            "/clientCambridgeScienceCentreTest/destination-space-crew-09012016-1500.jpg", MineType.IMAGE_JPEG,
-            "http://www.cambridgesciencecentre.org/whats-on/events/otherworlds/", "image")
-        // page 2 link 2
-        putTestDataRow("http://www.cambridgesciencecentre.org/whats-on/events/sunday-science-20-march/",
-            "/clientCambridgeScienceCentreTest/sunday-science-20-march.html", MineType.TEXT_HTML,
-            "http://www.cambridgesciencecentre.org/whats-on/events/sunday-science-20-march/", "description")
-        // page 2 link 2 image
-        putTestDataRow("http://www.cambridgesciencecentre.org/media/assets/3a/200e303cecd9eee71f77c97ddea630521cbfe9.png",
-            "/clientCambridgeScienceCentreTest/destination-space-crew-09012016-1500.jpg", MineType.IMAGE_JPEG,
-            "http://www.cambridgesciencecentre.org/whats-on/events/sunday-science-20-march/", "image")
-
-        // page 3 list
-        putTestDataRow("http://www.cambridgesciencecentre.org/whats-on/list/?page=3",
-            "/clientCambridgeScienceCentreTest/list3.html", MineType.TEXT_HTML,
-            "http://www.cambridgesciencecentre.org/whats-on/events/february-half-term-2016/", "list")
-        // page 3 link 1
-        putTestDataRow("http://www.cambridgesciencecentre.org/whats-on/events/february-half-term-2016/",
-            "/clientCambridgeScienceCentreTest/february-half-term-2016.html", MineType.TEXT_HTML,
-            "http://www.cambridgesciencecentre.org/whats-on/events/february-half-term-2016/", "description")
-        // page 3 link 1 image
-        putTestDataRow("http://www.cambridgesciencecentre.org/media/assets/3a/d78141bc0cc3f96d175843c2cd0e97beb9c370.jpg",
-            "/clientCambridgeScienceCentreTest/destination-space-crew-09012016-1500.jpg", MineType.IMAGE_JPEG,
-            "http://www.cambridgesciencecentre.org/whats-on/events/february-half-term-2016/", "image")
-        // page 3 link 2
-        putTestDataRow("http://www.cambridgesciencecentre.org/whats-on/events/electric-universe/",
-            "/clientCambridgeScienceCentreTest/electric-universe.html", MineType.TEXT_HTML,
-            "http://www.cambridgesciencecentre.org/whats-on/events/electric-universe/", "description")
-        // page 3 link 2 image
-        putTestDataRow("http://www.cambridgesciencecentre.org/media/assets/3a/fb2024b1db936348b42d3edd48995c32f69a1d.jpg",
-            "/clientCambridgeScienceCentreTest/destination-space-crew-09012016-1500.jpg", MineType.IMAGE_JPEG,
-            "http://www.cambridgesciencecentre.org/whats-on/events/electric-universe/", "image")
+        putTestDataRow("http://www.cambridgesciencecentre.org/media/cache/3e/9a/3e9a8c833f775230fc4f2bf9c740bb70.jpg",
+            "/clientCambridgeScienceCentreTest/image.jpeg", MineType.IMAGE_JPEG,
+            "http://www.cambridgesciencecentre.org/whats-on/events-calendar/recycle-life-0910/", "cambridgeScienceCentre:image")
     }
 
     private def expectedEsDataDescription(): DataTable = {

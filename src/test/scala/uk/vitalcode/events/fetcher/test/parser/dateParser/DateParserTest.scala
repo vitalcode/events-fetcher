@@ -24,6 +24,15 @@ class DateParserTest extends WordSpec with ShouldMatchers {
                 assertDateRange("Thursday, March 17th 2016 from 7:00 PM to 8:30 PM",
                     (LocalDateTime.of(2016, Month.MARCH, 17, 19, 0), LocalDateTime.of(2016, Month.MARCH, 17, 20, 30)))
             }
+            "date with four letter month abbreviation + from time" in {
+                assertDate("Sept. 10, 2016 12:00pm",
+                    LocalDateTime.of(2016, Month.SEPTEMBER, 10, 12, 0))
+            }
+            "date with four letter month abbreviation + 2 different from time" in {
+                assertDate("Sept. 10, 2016 11:00am, 3:00pm",
+                    LocalDateTime.of(2016, Month.SEPTEMBER, 10, 11, 0),
+                    LocalDateTime.of(2016, Month.SEPTEMBER, 10, 15, 0))
+            }
 
             // TODO + to time nex day "Sunday, March 20th 2016 from 10:00 PM to 5:00 AM" ???
         }
