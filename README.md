@@ -14,6 +14,12 @@ Include HBase jars on the Spark class path. Add following line to the conf/spark
 spark.executor.extraClassPath=/opt/cloudera/parcels/CDH-5.4.7-1.cdh5.4.7.p0.3/lib/hbase/lib/*
 ```
 
+Set $ZOOKEEPER_QUORUM and $ES_NODES for Spark executor worker nodes
+```
+export ES_NODES=vps1234.net:9200
+export ZOOKEEPER_QUORUM=vps1234.net,vps5678.net.net
+```
+
 Build the project and copy jar to the server
 ```
 cd $EVENTS_HOME
