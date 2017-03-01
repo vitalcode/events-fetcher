@@ -31,8 +31,8 @@ object Client {
       .setMaster(AppConfig.sparkMaster)
 //      .set("es.nodes", esNodesArg) // TODO fix for test usage
 
-      .set("es.nodes", "es.fillyourday.com") // TODO fix for test usage
-      .set("es.port", "9200") // TODO fix for test usage
+      .set("es.nodes", "es.fillyourday.com:443") // TODO fix for test usage
+      .set("es.port", "443") // TODO fix for test usage
       .set("es.net.ssl", "true") // TODO fix for test usage
       .set("es.net.ssl.protocol", "SSL") // TODO fix for test usage
 
