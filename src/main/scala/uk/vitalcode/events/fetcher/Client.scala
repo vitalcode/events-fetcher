@@ -37,8 +37,8 @@ object Client {
       .set("es.net.ssl.protocol", "SSL") // TODO fix for test usage
 
 
-//      .set("es.net.proxy.http.host", "es.fillyourday.com") // TODO fix for test usage
-//      .set("es.net.proxy.http.port", "443") // TODO fix for test usage
+      .set("es.net.proxy.http.host", "es.fillyourday.com") // TODO fix for test usage
+      .set("es.net.proxy.http.port", "443") // TODO fix for test usage
 
       .set("es.net.http.auth.user", "user10") // TODO fix for test usage
       .set("es.net.http.auth.pass", "password10") // TODO fix for test usage
