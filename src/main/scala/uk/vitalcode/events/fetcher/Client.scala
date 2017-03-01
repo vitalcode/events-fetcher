@@ -13,7 +13,7 @@ object Client {
 
   val usage =
     """
-    Usage: --elastic-nodes http://host:port
+    Usage: --elastic-nodes host:port
     """
   type OptionMap = Map[Symbol, Any]
 
@@ -30,6 +30,10 @@ object Client {
       .setAppName(AppConfig.sparkApp)
       .setMaster(AppConfig.sparkMaster)
       .set("es.nodes", esNodesArg) // TODO fix for test usage
+      .set("es.net.ssl", "true") // TODO fix for test usage
+      .set("es.net.http.auth.user", "user10") // TODO fix for test usage
+      .set("es.net.http.auth.pass", "password10") // TODO fix for test usage
+
     val sc = new SparkContext(sparkConf)
 
     val hBaseConf: Configuration = HBaseConfiguration.create()
