@@ -29,15 +29,16 @@ object Client {
     val sparkConf: SparkConf = new SparkConf()
       .setAppName(AppConfig.sparkApp)
       .setMaster(AppConfig.sparkMaster)
-      .set("es.nodes", esNodesArg) // TODO fix for test usage
+//      .set("es.nodes", esNodesArg) // TODO fix for test usage
+
+      .set("es.nodes", "es.fillyourday.com") // TODO fix for test usage
+      .set("es.port", "9200") // TODO fix for test usage
+
       .set("es.net.ssl", "true") // TODO fix for test usage
 
-      .set("es.port", "443") // TODO fix for test usage
-      .set("es.net.ssl.cert.allow.self.signed", "true") // TODO fix for test usage
 
-
-//      .set("es.net.proxy.http.host", "es.fillyourday.com") // TODO fix for test usage
-//      .set("es.net.proxy.http.port", "443") // TODO fix for test usage
+      .set("es.net.proxy.http.host", "es.fillyourday.com") // TODO fix for test usage
+      .set("es.net.proxy.http.port", "443") // TODO fix for test usage
 
       .set("es.net.http.auth.user", "user10") // TODO fix for test usage
       .set("es.net.http.auth.pass", "password10") // TODO fix for test usage
